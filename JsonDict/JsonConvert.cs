@@ -6,6 +6,16 @@ using System.Collections.Generic;
 
 namespace JsonConvert
 {
+    /*
+     * 说明:
+     * 实践下来第一个converter要好用得多,但是需要额外的一点if (ret != null && ret.GetType() == typeof(JObject))这种处理
+     * 
+     * link:
+     * https://stackoverflow.com/questions/6416017/json-net-deserializing-nested-dictionaries
+     * https://stackoverflow.com/questions/5546142/how-do-i-use-json-net-to-deserialize-into-nested-recursive-dictionary-and-list
+     * https://stackoverflow.com/questions/29616596/how-to-use-default-serialization-in-a-custom-jsonconverter
+     * https://stackoverflow.com/questions/11561597/deserialize-json-recursively-to-idictionarystring-object/31250524
+     */
     public class DictConverter : CustomCreationConverter<IDictionary<string, object>>
     {
         public override IDictionary<string, object> Create(Type objectType)
@@ -42,7 +52,7 @@ namespace JsonConvert
 
         public static Dictionary<string, object> GetDictByPath(this Dictionary<string, object> dict, string keyPath)
         {
-            var keys = keyPath.Split("\\");
+            var keys = keyPath.Split('\\');
             var i = 0;
             var tmp = dict;
             while (i < keys.Length)
@@ -66,7 +76,7 @@ namespace JsonConvert
 
         public static List<T> GetListByPath<T>(this Dictionary<string, object> dict, string keyPath)
         {
-            var keys = keyPath.Split("\\");
+            var keys = keyPath.Split('\\');
             var i = 0;
             var tmp = dict;
             while (i < keys.Length - 1)
@@ -94,7 +104,7 @@ namespace JsonConvert
 
         public static string GetStringByPath(this Dictionary<string, object> dict, string keyPath, string @default = null)
         {
-            var keys = keyPath.Split("\\");
+            var keys = keyPath.Split('\\');
             var i = 0;
             var tmp = dict;
             while (i < keys.Length - 1)
@@ -121,7 +131,7 @@ namespace JsonConvert
 
         public static int GetIntByPath(this Dictionary<string, object> dict, string keyPath, int? @default = null)
         {
-            var keys = keyPath.Split("\\");
+            var keys = keyPath.Split('\\');
             var i = 0;
             var tmp = dict;
             while (i < keys.Length - 1)
@@ -148,7 +158,7 @@ namespace JsonConvert
 
         public static double GetDoubleByPath(this Dictionary<string, object> dict, string keyPath, double? @default = null)
         {
-            var keys = keyPath.Split("\\");
+            var keys = keyPath.Split('\\');
             var i = 0;
             var tmp = dict;
             while (i < keys.Length - 1)
@@ -175,7 +185,7 @@ namespace JsonConvert
 
         public static bool GetBoolByPath(this Dictionary<string, object> dict, string keyPath, bool? @default = null)
         {
-            var keys = keyPath.Split("\\");
+            var keys = keyPath.Split('\\');
             var i = 0;
             var tmp = dict;
             while (i < keys.Length - 1)
