@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.779
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonDict", "JsonDict\JsonDict.csproj", "{D2FF337B-D0BC-407F-8FF6-4D47272A1CAA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogTools", "LogTools\LogTools.csproj", "{7898A95D-D444-4DD9-9452-5BB05B73F85E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D2FF337B-D0BC-407F-8FF6-4D47272A1CAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2FF337B-D0BC-407F-8FF6-4D47272A1CAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2FF337B-D0BC-407F-8FF6-4D47272A1CAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2FF337B-D0BC-407F-8FF6-4D47272A1CAA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7898A95D-D444-4DD9-9452-5BB05B73F85E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7898A95D-D444-4DD9-9452-5BB05B73F85E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7898A95D-D444-4DD9-9452-5BB05B73F85E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7898A95D-D444-4DD9-9452-5BB05B73F85E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {16323D76-1672-4B7C-B43D-25F5B28BE7F0}
+	EndGlobalSection
+EndGlobal
