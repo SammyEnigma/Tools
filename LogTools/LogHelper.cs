@@ -80,6 +80,20 @@ namespace LogTools
             }
         }
 
+        public string DumpObj<T>(T obj, params Expression<Func<T, object>>[] fieldSelector)
+        {
+            if (fieldSelector != null && fieldSelector.Length > 0)
+            {
+                JsonSerializerSettings jsetting = new JsonSerializerSettings();
+                jsetting.ContractResolver = new ExcludeFieldsContractResolver(fieldSelector.Select(p => GetName(p)).ToArray());
+                return JsonConvert.SerializeObject(obj, Formatting.Indented, jsetting);
+            }
+            else
+            {
+                return JsonConvert.SerializeObject(obj, Formatting.Indented);
+            }
+        }
+
         public string DumpObj<T>(IList<T> obj, params Expression<Func<T, object>>[] fieldSelector)
         {
             return DumpObj(obj, 0, obj.Count, fieldSelector);
