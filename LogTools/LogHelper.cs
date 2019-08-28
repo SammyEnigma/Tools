@@ -104,7 +104,7 @@ namespace LogTools
             // https://stackoverflow.com/questions/671968/retrieving-property-name-from-lambda-expression
             IEnumerable<T> tmp = objs;
             if (skip > 0)
-                tmp = objs.Skip(skip);
+                tmp = tmp.Skip(skip);
             if (take > 0)
                 tmp = tmp.Take(take);
 
