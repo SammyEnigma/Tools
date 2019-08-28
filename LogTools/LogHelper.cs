@@ -94,17 +94,17 @@ namespace LogTools
             }
         }
 
-        public string DumpObj<T>(IList<T> obj, params Expression<Func<T, object>>[] fieldSelector)
+        public string DumpObj<T>(IList<T> objs, params Expression<Func<T, object>>[] fieldSelector)
         {
-            return DumpObj(obj, 0, obj.Count, fieldSelector);
+            return DumpObj(objs, 0, objs.Count, fieldSelector);
         }
 
-        public string DumpObj<T>(IList<T> obj, int skip = -1, int take = -1, params Expression<Func<T, object>>[] fieldSelector)
+        public string DumpObj<T>(IList<T> objs, int skip = -1, int take = -1, params Expression<Func<T, object>>[] fieldSelector)
         {
             // https://stackoverflow.com/questions/671968/retrieving-property-name-from-lambda-expression
-            IEnumerable<T> tmp = obj;
+            IEnumerable<T> tmp = objs;
             if (skip > 0)
-                tmp = obj.Skip(skip);
+                tmp = objs.Skip(skip);
             if (take > 0)
                 tmp = tmp.Take(take);
 
@@ -116,7 +116,7 @@ namespace LogTools
             }
             else
             {
-                return JsonConvert.SerializeObject(obj, Formatting.Indented);
+                return JsonConvert.SerializeObject(tmp, Formatting.Indented);
             }
         }
 
