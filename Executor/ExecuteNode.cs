@@ -12,7 +12,7 @@ namespace Executor
             if (concurrency)
                 _scheduler = BaseScheduler.ThreadPool;
             else
-                _scheduler = new SingleThreadExecutor();
+                _scheduler = new SingleThreadScheduler();
         }
 
         public abstract void Run();

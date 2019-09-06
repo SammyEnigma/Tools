@@ -4,7 +4,7 @@ using System.Threading;
 
 namespace Executor.Threads
 {
-    public class SingleThreadExecutor : BaseScheduler
+    public class SingleThreadScheduler : BaseScheduler
     {
         private struct Work
         {
@@ -13,7 +13,7 @@ namespace Executor.Threads
         }
 
         private bool _doingWork;
-        private static readonly WaitCallback _doWorkCallback = s => ((SingleThreadExecutor)s).DoWork();
+        private static readonly WaitCallback _doWorkCallback = s => ((SingleThreadScheduler)s).DoWork();
         private readonly object _workSync = new object();
         private readonly ConcurrentQueue<Work> _workItems = new ConcurrentQueue<Work>();
 
