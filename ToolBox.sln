@@ -7,9 +7,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonDict", "JsonDict\JsonDi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LogTools", "LogTools\LogTools.csproj", "{7898A95D-D444-4DD9-9452-5BB05B73F85E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Executor", "Executor\Executor.csproj", "{5C6A3E79-E964-4AC2-979C-4212BF6B4094}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Executor", "Executor\Executor.csproj", "{5C6A3E79-E964-4AC2-979C-4212BF6B4094}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Executor-sample", "Executor-sample\Executor-sample.csproj", "{01B29FE1-8C51-4F66-9B5B-F1E00A742A42}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Executor-sample", "Executor-sample\Executor-sample.csproj", "{01B29FE1-8C51-4F66-9B5B-F1E00A742A42}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonToEntity", "JsonToEntity\JsonToEntity.csproj", "{08A0A88C-28D2-44FB-A930-55AF078C3353}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{01B29FE1-8C51-4F66-9B5B-F1E00A742A42}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{01B29FE1-8C51-4F66-9B5B-F1E00A742A42}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{01B29FE1-8C51-4F66-9B5B-F1E00A742A42}.Release|Any CPU.Build.0 = Release|Any CPU
+		{08A0A88C-28D2-44FB-A930-55AF078C3353}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{08A0A88C-28D2-44FB-A930-55AF078C3353}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{08A0A88C-28D2-44FB-A930-55AF078C3353}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{08A0A88C-28D2-44FB-A930-55AF078C3353}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
