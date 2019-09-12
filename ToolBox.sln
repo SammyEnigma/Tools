@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Executor-sample", "Executor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonToEntity", "JsonToEntity\JsonToEntity.csproj", "{08A0A88C-28D2-44FB-A930-55AF078C3353}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonToEntity-Console", "JsonToEntity-Console\JsonToEntity-Console.csproj", "{B79CE733-CC16-4096-A63B-A9EC9C26DADB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{08A0A88C-28D2-44FB-A930-55AF078C3353}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{08A0A88C-28D2-44FB-A930-55AF078C3353}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{08A0A88C-28D2-44FB-A930-55AF078C3353}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B79CE733-CC16-4096-A63B-A9EC9C26DADB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B79CE733-CC16-4096-A63B-A9EC9C26DADB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B79CE733-CC16-4096-A63B-A9EC9C26DADB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B79CE733-CC16-4096-A63B-A9EC9C26DADB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
