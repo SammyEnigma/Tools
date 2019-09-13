@@ -45,13 +45,13 @@ namespace JsonToEntity
 
         private static void RunOptionsAndReturnExitCode(Options opts)
         {
-            if (!EnsureInput(opts.InputPath, out string msg1))
+            if (!EnsureInput(opts, out string msg1))
                 WriteError(msg1);
 
             if (!EnsureOutput(opts, out string msg2))
                 WriteError(msg2);
 
-            if (!EnsureInput(opts.TemplateFile, out string msg3))
+            if (!EnsureInput(opts, out string msg3))
                 WriteError(msg3);
 
             WriteWarn($"输入文件路径为：{opts.InputPath}");
@@ -68,15 +68,16 @@ namespace JsonToEntity
             Console.WriteLine("done!");
         }
 
-        private static bool EnsureInput(string input, out string msg)
+        private static bool EnsureInput(Options options, out string msg)
         {
             msg = string.Empty;
-            if (string.IsNullOrEmpty(input))
+            if (string.IsNullOrEmpty(options.InputPath))
             {
                 msg = "输入文件路径为空";
                 return false;
             }
 
+            options.InputPath = options.InputPath.Replace('/', '\\');
             return true;
         }
 
@@ -95,24 +96,26 @@ namespace JsonToEntity
                 return false;
             }
 
+            options.OutputPath = options.OutputPath.Replace('/', '\\');
             return true;
         }
 
-        private static bool EnsureTemplate(string template, out string msg)
+        private static bool EnsureTemplate(Options options, out string msg)
         {
             msg = string.Empty;
-            if (string.IsNullOrEmpty(template))
+            if (string.IsNullOrEmpty(options.TemplateFile))
             {
                 msg = "模板文件为空";
                 return false;
             }
 
-            if (IsDirectory(template))
+            if (IsDirectory(options.TemplateFile))
             {
                 msg = "请指定正确的模板文件";
                 return false;
             }
 
+            options.TemplateFile = options.TemplateFile.Replace('/', '\\');
             return true;
         }
 

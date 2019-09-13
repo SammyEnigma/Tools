@@ -103,19 +103,7 @@ namespace JsonToEntity
 
             var extension = string.Empty;
             var parsed = RenderClass(list, out extension);
-            var out_name = _get_out_name();
-            using (FileStream fs = new FileStream(out_name, FileMode.OpenOrCreate))
-            {
-                var bytes = Encoding.UTF8.GetBytes(parsed);
-                fs.Write(bytes, 0, bytes.Length);
-            }
-
-            string _get_out_name()
-            {
-                return Path.Combine(
-                    _output,
-                    Path.GetFileNameWithoutExtension(inputFile) + "_out." + extension);
-            }
+            Output(inputFile, parsed, extension);
         }
 
         private IEnumerable<INamedTypeSymbol> GetAllTypes(INamespaceSymbol @namespace)
@@ -193,6 +181,15 @@ namespace JsonToEntity
                     }
                     break;
             }
+        }
+
+        private void Output(string input, string content, string extension)
+        {
+            var out_name = Path.Combine(
+                _output,
+                Path.GetFileNameWithoutExtension(input) + "_out." + extension);
+
+            File.WriteAllBytes(out_name, Encoding.UTF8.GetBytes(content));
         }
     }
 }

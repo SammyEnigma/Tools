@@ -37,8 +37,18 @@ namespace JsonToEntity.Core
         {
             var ret = string.Empty;
             if (!_typeMap.TryGetValue(fieldInfo.RawType, out ret))
+            {
+                if (IsGenericList(fieldInfo.RawType))
+                    return $"List<{fieldInfo.RawType.GenericTypeArguments[0].Name}>";
                 return fieldInfo.RawType.Name;
+            }
+
             return ret;
+        }
+
+        private bool IsGenericList(Type type)
+        {
+            return (type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(List<>)));
         }
     }
 }
