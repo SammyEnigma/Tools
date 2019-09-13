@@ -1,9 +1,9 @@
-﻿using JsonToEntity.Model;
+﻿using JsonToEntity.Core;
+using JsonToEntity.Model;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Emit;
-using RazorLight;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,42 +18,18 @@ namespace JsonToEntity
     public class Transformer
     {
         private string _output;
-        private string _template_path;
-        private string _template_file;
-        private RazorLightEngine _engine;
-        private Dictionary<Type, string> _csharpTypeMap;
+        private string _lang;
+        private TemplateEngine _engine;
+        private ITypeMapper _typeMapper;
+        private ICommentFormatter _commentFormatter;
+
         public Transformer(string output, string template)
         {
             _output = output;
-            _template_path = template.Substring(0, template.LastIndexOf('/'));
-            _template_file = Path.GetFileName(template);
-            _engine = new RazorLightEngineBuilder()
-              .UseFilesystemProject(_template_path)
-              .UseMemoryCachingProvider()
-              .Build();
-
-            _csharpTypeMap = new Dictionary<Type, string>
-            {
-                [typeof(byte)] = "byte",
-                [typeof(sbyte)] = "sbyte",
-                [typeof(short)] = "short",
-                [typeof(ushort)] = "unshort",
-                [typeof(int)] = "int",
-                [typeof(uint)] = "uint",
-                [typeof(long)] = "long",
-                [typeof(ulong)] = "ulong",
-                [typeof(float)] = "float",
-                [typeof(double)] = "double",
-                [typeof(decimal)] = "decimal",
-                [typeof(bool)] = "bool",
-                [typeof(string)] = "string",
-                [typeof(char)] = "char",
-                [typeof(Guid)] = "Guid",
-                [typeof(DateTime)] = "DateTime",
-                [typeof(DateTimeOffset)] = "DateTimeOffset",
-                [typeof(TimeSpan)] = "TimeSpan",
-                [typeof(object)] = "object"
-            };
+            _engine = new RazorEngine(template);
+            _lang = _engine.ParseLangFromTemplate();
+            SetTypeMapper();
+            SetCommentFormatter();
         }
 
         public void Parse(string inputFile)
@@ -125,9 +101,10 @@ namespace JsonToEntity
                 }
             }
 
-            var parsed = RenderClass(list);
+            var extension = string.Empty;
+            var parsed = RenderClass(list, out extension);
             var out_name = _get_out_name();
-            using (FileStream fs = new FileStream(out_name, FileMode.CreateNew))
+            using (FileStream fs = new FileStream(out_name, FileMode.OpenOrCreate))
             {
                 var bytes = Encoding.UTF8.GetBytes(parsed);
                 fs.Write(bytes, 0, bytes.Length);
@@ -137,7 +114,7 @@ namespace JsonToEntity
             {
                 return Path.Combine(
                     _output,
-                    Path.GetFileNameWithoutExtension(inputFile) + "_out.html");
+                    Path.GetFileNameWithoutExtension(inputFile) + "_out." + extension);
             }
         }
 
@@ -160,11 +137,11 @@ namespace JsonToEntity
                 yield return nestedType;
         }
 
-        private string RenderClass(List<ClassInfo> info)
+        private string RenderClass(List<ClassInfo> info, out string outFileExtension)
         {
             PreProcess(info);
-            var html = InnerRender(info);
-            return html;
+            outFileExtension = _engine.GetOutFileExtension();
+            return _engine.Render(info);
         }
 
         private void PreProcess(List<ClassInfo> list)
@@ -178,16 +155,7 @@ namespace JsonToEntity
             foreach (var cinfo in list)
             {
                 foreach (var finfo in cinfo.Fields)
-                {
-                    if (_csharpTypeMap.ContainsKey(finfo.RawType))
-                    {
-                        finfo.TypeStr = _csharpTypeMap[finfo.RawType];
-                    }
-                    else
-                    {
-                        finfo.TypeStr = finfo.RawType.Name;
-                    }
-                }
+                    finfo.TypeStr = _typeMapper.MapType(finfo);
             }
         }
 
@@ -195,32 +163,36 @@ namespace JsonToEntity
         {
             foreach (var cinfo in list)
             {
-                cinfo.CommentStr = _format(cinfo.RawComment);
+                cinfo.CommentStr = _commentFormatter.Format(cinfo.RawComment);
                 foreach (var finfo in cinfo.Fields)
-                    finfo.CommentStr = _format(finfo.RawComment);
-            }
-
-            List<string> _format(string raw)
-            {
-                var ret = new List<string>();
-                var arrs = raw.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
-                for (var i = 1; i < arrs.Length - 1; i++)
-                    ret.Add(arrs[i]);
-
-                return ret;
+                    finfo.CommentStr = _commentFormatter.Format(finfo.RawComment);
             }
         }
 
-        private string InnerRender(List<ClassInfo> model)
+        private void SetTypeMapper()
         {
-            var result = string.Empty;
-            var cacheResult = _engine.TemplateCache.RetrieveTemplate(_template_file);
-            if (cacheResult.Success)
-                result = _engine.RenderTemplateAsync(cacheResult.Template.TemplatePageFactory(), model).Result;
-            else
-                result = _engine.CompileRenderAsync(_template_file, model).Result;
+            switch (_lang)
+            {
+                case "c#":
+                case "csharp":
+                    {
+                        _typeMapper = new CSharpTypeMapper();
+                    }
+                    break;
+            }
+        }
 
-            return result;
+        private void SetCommentFormatter()
+        {
+            switch (_lang)
+            {
+                case "c#":
+                case "csharp":
+                    {
+                        _commentFormatter = new CSharpCommentFormatter();
+                    }
+                    break;
+            }
         }
     }
 }

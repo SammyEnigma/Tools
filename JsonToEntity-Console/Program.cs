@@ -45,29 +45,107 @@ namespace JsonToEntity
 
         private static void RunOptionsAndReturnExitCode(Options opts)
         {
-            var input = opts.InputPath;
-            var output = opts.OutputPath;
-            var template = opts.TemplateFile;
+            if (!EnsureInput(opts.InputPath, out string msg1))
+                WriteError(msg1);
 
-            Console.WriteLine($"输入文件路径为：{input}");
-            EnsureOutput(ref output);
-            Console.WriteLine($"输出文件路径为：{output}");
-            Console.WriteLine($"模板文件为：{template}");
+            if (!EnsureOutput(opts, out string msg2))
+                WriteError(msg2);
 
-            var trans = new Transformer(output, template);
-            Console.WriteLine("Processing...");
-            foreach (var file in Directory.GetFiles(input, "*.cs"))
+            if (!EnsureInput(opts.TemplateFile, out string msg3))
+                WriteError(msg3);
+
+            WriteWarn($"输入文件路径为：{opts.InputPath}");
+            WriteWarn($"输出文件路径为：{opts.OutputPath}");
+            WriteWarn($"模板文件为：{opts.TemplateFile}");
+
+            var trans = new Transformer(opts.OutputPath, opts.TemplateFile);
+            Console.WriteLine("processing...");
+            foreach (var file in GetFiles(opts.InputPath))
             {
                 trans.Parse(file);
                 Console.WriteLine("processed a file: " + file);
             }
-            Console.WriteLine("Done!");
+            Console.WriteLine("done!");
         }
 
-        private static void EnsureOutput(ref string output)
+        private static bool EnsureInput(string input, out string msg)
         {
-            if (string.IsNullOrEmpty(output))
-                output = Path.Combine(Directory.GetCurrentDirectory());
+            msg = string.Empty;
+            if (string.IsNullOrEmpty(input))
+            {
+                msg = "输入文件路径为空";
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool EnsureOutput(Options options, out string msg)
+        {
+            msg = string.Empty;
+            if (string.IsNullOrEmpty(options.OutputPath))
+            {
+                options.OutputPath = Path.Combine(Directory.GetCurrentDirectory());
+                return true;
+            }
+
+            if (!IsDirectory(options.OutputPath))
+            {
+                msg = "请指定正确的输出文件路径";
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool EnsureTemplate(string template, out string msg)
+        {
+            msg = string.Empty;
+            if (string.IsNullOrEmpty(template))
+            {
+                msg = "模板文件为空";
+                return false;
+            }
+
+            if (IsDirectory(template))
+            {
+                msg = "请指定正确的模板文件";
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsDirectory(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return false;
+
+            FileAttributes attr = File.GetAttributes(path);
+            return (attr & FileAttributes.Directory) == FileAttributes.Directory;
+        }
+
+        private static string[] GetFiles(string path)
+        {
+            FileAttributes attr = File.GetAttributes(path);
+            if ((attr & FileAttributes.Directory) == FileAttributes.Directory)
+                return Directory.GetFiles(path, "*.cs");
+            else
+                return new string[] { path };
+        }
+
+        private static void WriteError(string msg)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine(msg);
+            Console.ResetColor();
+        }
+
+        private static void WriteWarn(string msg)
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine(msg);
+            Console.ResetColor();
         }
     }
 }
