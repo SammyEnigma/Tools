@@ -1,37 +1,24 @@
 ﻿@using JsonToEntity.Model
 @model List<ClassInfo>
-
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-    <meta charset="utf-8" />
-    <meta lang="csharp" />
-    <title>自动生成-c#</title>
-    <style>
-        .indent {
-            padding-left: 30px;
-        }
-    </style>
-</head>
-<body>
-    @foreach (var classInfo in Model)
+@{
+    DisableEncoding = true;
+}
+@foreach (var classInfo in Model)
+{
+    foreach (string com in classInfo.CommentStr)
     {
-        foreach (var com in classInfo.CommentStr)
-        {
-            <div>@com</div>
-        }
-        <div>public class @classInfo.Name</div>
-        <div>{</div>
-        foreach (var field in classInfo.Fields)
-        {
-            foreach (var com in field.CommentStr)
-            {
-                <div class="indent">@com</div>
-            }
-            <div class="indent">public @field.TypeStr @field.Name { set; get; }</div>
-        }
-        <div>}</div>
-        <br />
+        @(com.NewLine())
     }
-</body>
-</html>
+    @("public class " + classInfo.Name.NewLine())
+    @("{".NewLine())
+    foreach (var field in classInfo.Fields)
+    {
+        foreach (string com in field.CommentStr)
+        {
+            @(com.Indent().NewLine())
+        }
+        @($"public {@field.TypeStr} {@field.Name} {{ set; get; }}".Indent().NewLine())
+    }
+    @("}".NewLine().NewLine())
+}
+

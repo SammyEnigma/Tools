@@ -10,7 +10,7 @@ namespace JsonToEntity.Core
             var ret = new List<string>();
             var arrs = rawComment.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
             for (var i = 1; i < arrs.Length - 1; i++)
-                ret.Add($"/// {arrs[i]}");
+                ret.Add($"/// {arrs[i].Trim()}");
 
             return ret;
         }
