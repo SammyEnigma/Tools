@@ -16,11 +16,6 @@ namespace JsonToEntity.Core
              .Build();
         }
 
-        public override string GetOutFileExtension()
-        {
-            return "html"; // 也可以因为根据生成的语言来决定，比如这里可以返回"cs"
-        }
-
         public override string ParseLangFromTemplate()
         {
             return "c#";

@@ -165,6 +165,7 @@ namespace JsonToEntity
                         _typeMapper = new CSharpTypeMapper();
                     }
                     break;
+                default: throw new NotSupportedException($"暂不支持的语言类型：{_lang}");
             }
         }
 
@@ -178,6 +179,20 @@ namespace JsonToEntity
                         _commentFormatter = new CSharpCommentFormatter();
                     }
                     break;
+                default: throw new NotSupportedException($"暂不支持的语言类型：{_lang}");
+            }
+        }
+
+        private string GetOutFileExtension()
+        {
+            switch (_lang)
+            {
+                case "c#":
+                case "csharp":
+                    {
+                        return "cs";
+                    }
+                default: return string.Empty;
             }
         }
 
@@ -185,7 +200,7 @@ namespace JsonToEntity
         {
             var relative = GetRelativePath(inputPath);
             var name = Path.GetFileNameWithoutExtension(inputPath);
-            var extension = _engine.GetOutFileExtension();
+            var extension = GetOutFileExtension();
 
             var out_path = Path.Combine(
                 _output,

@@ -14,7 +14,6 @@ namespace JsonToEntity.Core
             _template_file = Path.GetFileName(template);
         }
 
-        public abstract string GetOutFileExtension();
         public abstract string ParseLangFromTemplate();
         public abstract string Render(List<ClassInfo> model);
     }
