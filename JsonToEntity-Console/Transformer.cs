@@ -101,9 +101,8 @@ namespace JsonToEntity
                 }
             }
 
-            var extension = string.Empty;
-            var parsed = RenderClass(list, out extension);
-            Output(inputFile, parsed, extension);
+            var parsed = RenderClass(list);
+            Output(inputFile, parsed);
         }
 
         private IEnumerable<INamedTypeSymbol> GetAllTypes(INamespaceSymbol @namespace)
@@ -125,10 +124,9 @@ namespace JsonToEntity
                 yield return nestedType;
         }
 
-        private string RenderClass(List<ClassInfo> info, out string outFileExtension)
+        private string RenderClass(List<ClassInfo> info)
         {
             PreProcess(info);
-            outFileExtension = _engine.GetOutFileExtension();
             return _engine.Render(info);
         }
 
@@ -183,13 +181,30 @@ namespace JsonToEntity
             }
         }
 
-        private void Output(string input, string content, string extension)
+        private void Output(string inputPath, string content)
         {
-            var out_name = Path.Combine(
-                _output,
-                Path.GetFileNameWithoutExtension(input) + "_out." + extension);
+            var relative = GetRelativePath(inputPath);
+            var name = Path.GetFileNameWithoutExtension(inputPath);
+            var extension = _engine.GetOutFileExtension();
 
-            File.WriteAllBytes(out_name, Encoding.UTF8.GetBytes(content));
+            var out_path = Path.Combine(
+                _output,
+                relative);
+            var out_file = Path.Combine(
+                out_path,
+                $"{name}_out.{extension}");
+
+            if (!Directory.Exists(out_path))
+                Directory.CreateDirectory(out_path);
+
+            File.WriteAllBytes(out_file, Encoding.UTF8.GetBytes(content));
+        }
+
+        private string GetRelativePath(string inputFile)
+        {
+            inputFile = inputFile.Replace(Directory.GetDirectoryRoot(inputFile), string.Empty);
+            inputFile = inputFile.Replace(Path.GetFileName(inputFile), string.Empty);
+            return inputFile;
         }
     }
 }

@@ -1,11 +1,12 @@
 ﻿@using JsonToEntity.Model
-@model List<ClassInfo>
+@using RazorLight
+@inherits TemplatePage<List<ClassInfo>>
 @{
     DisableEncoding = true;
 }
 @foreach (var classInfo in Model)
 {
-    foreach (string com in classInfo.CommentStr)
+    foreach (var com in classInfo.CommentStr)
     {
         @(com.NewLine())
     }
@@ -13,7 +14,7 @@
     @("{".NewLine())
     foreach (var field in classInfo.Fields)
     {
-        foreach (string com in field.CommentStr)
+        foreach (var com in field.CommentStr)
         {
             @(com.Indent().NewLine())
         }
@@ -21,4 +22,3 @@
     }
     @("}".NewLine().NewLine())
 }
-

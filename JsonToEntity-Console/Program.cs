@@ -51,7 +51,7 @@ namespace JsonToEntity
             if (!EnsureOutput(opts, out string msg2))
                 WriteError(msg2);
 
-            if (!EnsureInput(opts, out string msg3))
+            if (!EnsureTemplate(opts, out string msg3))
                 WriteError(msg3);
 
             WriteWarn($"输入文件路径为：{opts.InputPath}");
@@ -78,6 +78,12 @@ namespace JsonToEntity
             }
 
             options.InputPath = options.InputPath.Replace('/', '\\');
+            if (Path.GetPathRoot(options.InputPath) == options.InputPath)
+            {
+                msg = $"你确定要扫描整个{options.InputPath}盘？！";
+                return false;
+            }
+
             return true;
         }
 
@@ -132,7 +138,7 @@ namespace JsonToEntity
         {
             FileAttributes attr = File.GetAttributes(path);
             if ((attr & FileAttributes.Directory) == FileAttributes.Directory)
-                return Directory.GetFiles(path, "*.cs");
+                return Directory.GetFiles(path, "*.cs", SearchOption.AllDirectories);
             else
                 return new string[] { path };
         }
