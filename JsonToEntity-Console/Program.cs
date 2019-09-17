@@ -41,18 +41,31 @@ namespace JsonToEntity
         {
             Parser.Default.ParseArguments<Options>(args)
             .WithParsed(opts => RunOptionsAndReturnExitCode(opts));
+            Console.Read();
         }
 
         private static void RunOptionsAndReturnExitCode(Options opts)
         {
             if (!EnsureInput(opts, out string msg1))
+            {
                 WriteError(msg1);
+                WriteError("程序已退出！");
+                return;
+            }
 
             if (!EnsureOutput(opts, out string msg2))
+            {
                 WriteError(msg2);
+                WriteError("程序已退出！");
+                return;
+            }
 
             if (!EnsureTemplate(opts, out string msg3))
+            {
                 WriteError(msg3);
+                WriteError("程序已退出！");
+                return;
+            }
 
             WriteWarn($"输入文件路径为：{opts.InputPath}");
             WriteWarn($"输出文件路径为：{opts.OutputPath}");
@@ -77,10 +90,16 @@ namespace JsonToEntity
                 return false;
             }
 
+            if (!options.InputPath.Contains(':'))
+            {
+                msg = "输入文件暂不支持相对路径";
+                return false;
+            }
+
             options.InputPath = options.InputPath.Replace('/', '\\');
             if (Path.GetPathRoot(options.InputPath) == options.InputPath)
             {
-                msg = $"你确定要扫描整个{options.InputPath}盘？！";
+                msg = $"输入文件路径为{options.InputPath}，你确定要扫描整个{options.InputPath}盘？";
                 return false;
             }
 
@@ -94,6 +113,12 @@ namespace JsonToEntity
             {
                 options.OutputPath = Path.Combine(Directory.GetCurrentDirectory());
                 return true;
+            }
+
+            if (!options.OutputPath.Contains(':'))
+            {
+                msg = "输出文件暂不支持相对路径";
+                return false;
             }
 
             if (!IsDirectory(options.OutputPath))
@@ -112,6 +137,12 @@ namespace JsonToEntity
             if (string.IsNullOrEmpty(options.TemplateFile))
             {
                 msg = "模板文件为空";
+                return false;
+            }
+
+            if (!options.TemplateFile.Contains(':'))
+            {
+                msg = "模板文件暂不支持相对路径";
                 return false;
             }
 
