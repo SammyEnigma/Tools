@@ -74,10 +74,10 @@ namespace JsonToEntity
             var trans = new Transformer(opts.OutputPath, opts.TemplateFile);
             Console.WriteLine("processing...");
             foreach (var file in GetFiles(opts.InputPath).Where(
-                p => !p.Contains("\\bin") &&
-                !p.Contains("\\obj") &&
-                !p.Contains("\\debug") &&
-                !p.Contains("\\release")))
+                p => !p.Contains("/bin") &&
+                !p.Contains("/obj") &&
+                !p.Contains("/debug") &&
+                !p.Contains("/release")))
             {
                 trans.Parse(opts.InputPath, file);
                 Console.WriteLine("processed a file: " + file);

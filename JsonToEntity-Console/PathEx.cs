@@ -8,11 +8,11 @@ namespace JsonToEntity
             if (string.IsNullOrEmpty(path))
                 throw new System.ArgumentNullException("path不允许为空");
 
-            path = path.Replace('/', '\\');
+            path = path.Replace('\\', '/');
             if (path.IsDirectory())
             {
-                if (path.LastIndexOf('\\') != path.Length - 1)
-                    path += "\\";
+                if (path.LastIndexOf('/') != path.Length - 1)
+                    path += "/";
             }
 
             return path;

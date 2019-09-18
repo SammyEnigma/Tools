@@ -10,7 +10,7 @@ namespace JsonToEntity.Core
         protected string _template_file;
         public TemplateEngine(string template)
         {
-            _template_path = template.Substring(0, template.LastIndexOf('\\'));
+            _template_path = template.Substring(0, template.LastIndexOf('/'));
             _template_file = Path.GetFileName(template);
         }
 
