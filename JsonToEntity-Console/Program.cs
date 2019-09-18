@@ -74,7 +74,7 @@ namespace JsonToEntity
             Console.WriteLine("processing...");
             foreach (var file in GetFiles(opts.InputPath))
             {
-                trans.Parse(file);
+                trans.Parse(opts.InputPath, file);
                 Console.WriteLine("processed a file: " + file);
             }
             Console.WriteLine("done!");
@@ -101,6 +101,9 @@ namespace JsonToEntity
                 msg = $"输入文件路径为{options.InputPath}，你确定要扫描整个{options.InputPath}盘？";
                 return false;
             }
+
+            if (IsDirectory(options.InputPath))
+                options.InputPath += "\\";
 
             return true;
         }

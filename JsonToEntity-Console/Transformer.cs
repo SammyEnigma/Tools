@@ -32,7 +32,7 @@ namespace JsonToEntity
             SetCommentFormatter();
         }
 
-        public void Parse(string inputFile)
+        public void Parse(string baseInputPath, string inputFile)
         {
             // 加载文件
             var content = File.ReadAllText(inputFile);
@@ -102,7 +102,7 @@ namespace JsonToEntity
             }
 
             var parsed = RenderClass(list);
-            Output(inputFile, parsed);
+            Output(baseInputPath, inputFile, parsed);
         }
 
         private IEnumerable<INamedTypeSymbol> GetAllTypes(INamespaceSymbol @namespace)
@@ -196,10 +196,10 @@ namespace JsonToEntity
             }
         }
 
-        private void Output(string inputPath, string content)
+        private void Output(string baseInputPath, string inputFile, string content)
         {
-            var relative = GetRelativePath(inputPath);
-            var name = Path.GetFileNameWithoutExtension(inputPath);
+            var relative = GetRelativePath(baseInputPath, inputFile);
+            var name = Path.GetFileNameWithoutExtension(inputFile);
             var extension = GetOutFileExtension();
 
             var out_path = Path.Combine(
@@ -215,11 +215,12 @@ namespace JsonToEntity
             File.WriteAllBytes(out_file, Encoding.UTF8.GetBytes(content));
         }
 
-        private string GetRelativePath(string inputFile)
+        private string GetRelativePath(string baseInputPath, string inputFile)
         {
-            inputFile = inputFile.Replace(Directory.GetDirectoryRoot(inputFile), string.Empty);
-            inputFile = inputFile.Replace(Path.GetFileName(inputFile), string.Empty);
-            return inputFile;
+            var name = Path.GetFileName(inputFile);
+            if (baseInputPath == inputFile)
+                return name;
+            return inputFile.Replace(baseInputPath, string.Empty).Replace(name, string.Empty);
         }
     }
 }
