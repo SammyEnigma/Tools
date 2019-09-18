@@ -219,7 +219,8 @@ namespace JsonToEntity
         {
             var name = Path.GetFileName(inputFile);
             if (baseInputPath == inputFile)
-                return name;
+                return string.Empty;
+
             return inputFile.Replace(baseInputPath, string.Empty).Replace(name, string.Empty);
         }
     }

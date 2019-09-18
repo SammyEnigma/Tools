@@ -3,6 +3,7 @@ using CommandLine.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace JsonToEntity
 {
@@ -72,7 +73,11 @@ namespace JsonToEntity
 
             var trans = new Transformer(opts.OutputPath, opts.TemplateFile);
             Console.WriteLine("processing...");
-            foreach (var file in GetFiles(opts.InputPath))
+            foreach (var file in GetFiles(opts.InputPath).Where(
+                p => !p.Contains("\\bin") &&
+                !p.Contains("\\obj") &&
+                !p.Contains("\\debug") &&
+                !p.Contains("\\release")))
             {
                 trans.Parse(opts.InputPath, file);
                 Console.WriteLine("processed a file: " + file);
@@ -89,21 +94,13 @@ namespace JsonToEntity
                 return false;
             }
 
-            if (!options.InputPath.Contains(':'))
-            {
-                msg = "输入文件暂不支持相对路径";
-                return false;
-            }
-
-            options.InputPath = options.InputPath.Replace('/', '\\');
-            if (Path.GetPathRoot(options.InputPath) == options.InputPath)
+            if (options.InputPath.IsRoot())
             {
                 msg = $"输入文件路径为{options.InputPath}，你确定要扫描整个{options.InputPath}盘？";
                 return false;
             }
 
-            if (IsDirectory(options.InputPath))
-                options.InputPath += "\\";
+            options.InputPath = options.InputPath.GetNormalized();
 
             return true;
         }
@@ -117,19 +114,7 @@ namespace JsonToEntity
                 return true;
             }
 
-            if (!options.OutputPath.Contains(':'))
-            {
-                msg = "输出文件暂不支持相对路径";
-                return false;
-            }
-
-            if (!IsDirectory(options.OutputPath))
-            {
-                msg = "请指定正确的输出文件路径";
-                return false;
-            }
-
-            options.OutputPath = options.OutputPath.Replace('/', '\\');
+            options.OutputPath = options.OutputPath.GetNormalized();
             return true;
         }
 
@@ -142,29 +127,8 @@ namespace JsonToEntity
                 return false;
             }
 
-            if (!options.TemplateFile.Contains(':'))
-            {
-                msg = "模板文件暂不支持相对路径";
-                return false;
-            }
-
-            if (IsDirectory(options.TemplateFile))
-            {
-                msg = "请指定正确的模板文件";
-                return false;
-            }
-
-            options.TemplateFile = options.TemplateFile.Replace('/', '\\');
+            options.TemplateFile = options.TemplateFile.GetNormalized();
             return true;
-        }
-
-        private static bool IsDirectory(string path)
-        {
-            if (string.IsNullOrEmpty(path))
-                return false;
-
-            FileAttributes attr = File.GetAttributes(path);
-            return (attr & FileAttributes.Directory) == FileAttributes.Directory;
         }
 
         private static string[] GetFiles(string path)

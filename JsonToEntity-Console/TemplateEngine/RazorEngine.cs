@@ -1,6 +1,7 @@
 ﻿using JsonToEntity.Model;
 using RazorLight;
 using System.Collections.Generic;
+using System.IO;
 
 namespace JsonToEntity.Core
 {
@@ -10,6 +11,9 @@ namespace JsonToEntity.Core
         public RazorEngine(string template)
             : base(template)
         {
+            if (_template_path.IsRelativePath())
+                _template_path = Path.GetFullPath(_template_path);
+
             _engine = new RazorLightEngineBuilder()
              .UseFilesystemProject(_template_path)
              .UseMemoryCachingProvider()
