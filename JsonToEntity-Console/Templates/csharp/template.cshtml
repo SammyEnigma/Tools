@@ -3,6 +3,7 @@
 @inherits TemplatePage<List<ClassInfo>>
 @{
     DisableEncoding = true;
+    Language = "c#"; // 如果是razor模板，那么语言选项的规则暂时就用该字段表示
 }
 @foreach (var classInfo in Model)
 {

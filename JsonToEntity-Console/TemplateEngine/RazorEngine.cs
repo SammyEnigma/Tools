@@ -2,6 +2,7 @@
 using RazorLight;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace JsonToEntity.Core
 {
@@ -22,7 +23,12 @@ namespace JsonToEntity.Core
 
         public override string ParseLangFromTemplate()
         {
-            return "c#";
+            var content = File.ReadAllText(_template);
+            var match = Regex.Match(content, "Language = \".+\";");
+            if (match.Success)
+                return match.Value.Split('"')[1];
+
+            throw new System.InvalidOperationException("请指定模板文件的语言选项：@{ Language = \"c#\"; }");
         }
 
         public override string Render(List<ClassInfo> model)
