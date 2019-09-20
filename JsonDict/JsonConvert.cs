@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 
-namespace JsonConvert
+namespace JsonDictConvert
 {
     /*
      * 说明:
@@ -45,6 +45,11 @@ namespace JsonConvert
 
     public static class DictExtension
     {
+        public static Dictionary<string, object> ToJsonDict(this string str)
+        {
+            return JsonConvert.DeserializeObject<Dictionary<string, object>>(str, new JsonConverter[] { new DictConverter() });
+        }
+
         public static Dictionary<string, object> GetDict(this Dictionary<string, object> dict, string key)
         {
             return GetValue<Dictionary<string, object>>(dict, key);
