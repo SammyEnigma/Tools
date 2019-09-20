@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Xamasoft.JsonClassGenerator;
+using JsonDictConvert;
 
 namespace JsonToClass
 {
@@ -68,6 +69,7 @@ namespace JsonToClass
             foreach (var file in GetFiles(opts.InputPath))
             {
                 var content = File.ReadAllText(file);
+                content = PreProcess(content);
                 var gen = new JsonClassGenerator
                 {
                     Namespace = "AutoGen",
@@ -89,6 +91,12 @@ namespace JsonToClass
                 Console.WriteLine("processed a file: " + file);
             }
             Console.WriteLine("done!");
+        }
+
+        private static string PreProcess(string content)
+        {
+            var json_dict = content.ToJsonDict();
+            return content;
         }
 
         private static bool EnsureInput(Options options, out string msg)
