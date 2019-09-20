@@ -42,7 +42,6 @@ namespace JsonToClass
         {
             Parser.Default.ParseArguments<Options>(args)
             .WithParsed(opts => RunOptionsAndReturnExitCode(opts));
-            Console.Read();
         }
 
         private static void RunOptionsAndReturnExitCode(Options opts)
