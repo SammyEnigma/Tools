@@ -3,7 +3,6 @@ using CommandLine.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Xamasoft.JsonClassGenerator;
 
 namespace JsonToClass
@@ -16,6 +15,9 @@ namespace JsonToClass
         [Option('o', "output", Required = false, HelpText = "输出文件路径")]
         public string OutputPath { get; set; }
 
+        [Option('m', "multiple", Required = false, HelpText = "是否生成单一文件")]
+        public bool Multiple { get; set; }
+
         [Usage(ApplicationAlias = "genclass")]
         public static IEnumerable<Example> Examples
         {
@@ -26,7 +28,8 @@ namespace JsonToClass
                     new Example("将json转换成c#类", new Options
                     {
                         InputPath = "c:/tmp/input",
-                        OutputPath = "c:/tmp/output"
+                        OutputPath = "c:/tmp/output",
+                        Multiple = true
                     })
                 };
             }
@@ -74,7 +77,7 @@ namespace JsonToClass
                     TargetFolder = GetOutputFilePath(opts, file),
                     MainClass = "RootObject" + (count++),
                     UsePascalCase = true,
-                    SingleFile = true,
+                    SingleFile = !opts.Multiple,
                     Example = content
                 };
                 using (var sw = new StringWriter())
