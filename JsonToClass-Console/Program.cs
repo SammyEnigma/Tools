@@ -65,19 +65,21 @@ namespace JsonToClass
             WriteWarn($"输出文件路径为：{opts.OutputPath}");
 
             Console.WriteLine("processing...");
-            var count = 0;
             foreach (var file in GetFiles(opts.InputPath))
             {
                 var tmp = file.GetNormalized();
                 var content = File.ReadAllText(tmp);
+                if (string.IsNullOrEmpty(content))
+                    continue;
+
                 content = PreProcess(content);
                 var gen = new JsonClassGenerator
                 {
-                    Namespace = "AutoGen",
+                    Namespace = GetOutputNamespace(opts, tmp),
                     InternalVisibility = false,
                     UseProperties = true,
                     TargetFolder = GetOutputFilePath(opts, tmp),
-                    MainClass = "RootObject" + (count++),
+                    MainClass = GetOutputClass(tmp),
                     UsePascalCase = true,
                     SingleFile = !opts.Multiple,
                     Example = content
@@ -137,6 +139,17 @@ namespace JsonToClass
                 return Directory.GetFiles(path, "*.json", SearchOption.AllDirectories);
             else
                 return new string[] { path };
+        }
+
+        private static string GetOutputNamespace(Options options, string inputFile)
+        {
+            var relative = GetRelativePath(options.InputPath, inputFile);
+            return relative.Replace('/', '.').TrimEnd('.');
+        }
+
+        private static string GetOutputClass(string inputFile)
+        {
+            return Path.GetFileNameWithoutExtension(inputFile);
         }
 
         private static string GetOutputFilePath(Options options, string inputFile)
