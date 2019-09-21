@@ -123,10 +123,7 @@ namespace JsonToClass
         {
             msg = string.Empty;
             if (string.IsNullOrEmpty(options.OutputPath))
-            {
                 options.OutputPath = Path.Combine(Directory.GetCurrentDirectory());
-                return true;
-            }
 
             options.OutputPath = options.OutputPath.GetNormalized();
             return true;
