@@ -79,8 +79,9 @@ namespace JsonToEntity
                 !p.Contains("/debug") &&
                 !p.Contains("/release")))
             {
-                trans.Parse(opts.InputPath, file);
-                Console.WriteLine("processed a file: " + file);
+                var tmp = file.GetNormalized();
+                trans.Parse(opts.InputPath, tmp);
+                Console.WriteLine("processed a file: " + tmp);
             }
             Console.WriteLine("done!");
         }

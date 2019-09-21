@@ -68,14 +68,15 @@ namespace JsonToClass
             var count = 0;
             foreach (var file in GetFiles(opts.InputPath))
             {
-                var content = File.ReadAllText(file);
+                var tmp = file.GetNormalized();
+                var content = File.ReadAllText(tmp);
                 content = PreProcess(content);
                 var gen = new JsonClassGenerator
                 {
                     Namespace = "AutoGen",
                     InternalVisibility = false,
                     UseProperties = true,
-                    TargetFolder = GetOutputFilePath(opts, file),
+                    TargetFolder = GetOutputFilePath(opts, tmp),
                     MainClass = "RootObject" + (count++),
                     UsePascalCase = true,
                     SingleFile = !opts.Multiple,
@@ -88,7 +89,7 @@ namespace JsonToClass
                     sw.Flush();
                 }
 
-                Console.WriteLine("processed a file: " + file);
+                Console.WriteLine("processed a file: " + tmp);
             }
             Console.WriteLine("done!");
         }
