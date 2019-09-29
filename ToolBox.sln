@@ -11,9 +11,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Executor", "Executor\Execut
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Executor-sample", "Executor-sample\Executor-sample.csproj", "{01B29FE1-8C51-4F66-9B5B-F1E00A742A42}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonToEntity", "JsonToEntity\JsonToEntity.csproj", "{08A0A88C-28D2-44FB-A930-55AF078C3353}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonToEntity", "JsonToEntity\JsonToEntity.csproj", "{08A0A88C-28D2-44FB-A930-55AF078C3353}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonToEntity-Console", "JsonToEntity-Console\JsonToEntity-Console.csproj", "{B79CE733-CC16-4096-A63B-A9EC9C26DADB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonToEntity-Console", "JsonToEntity-Console\JsonToEntity-Console.csproj", "{B79CE733-CC16-4096-A63B-A9EC9C26DADB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RedisTool", "RedisTool\RedisTool.csproj", "{5E1BF6B7-5E77-4BEA-800A-891CCED01A8D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +47,10 @@ Global
 		{B79CE733-CC16-4096-A63B-A9EC9C26DADB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B79CE733-CC16-4096-A63B-A9EC9C26DADB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B79CE733-CC16-4096-A63B-A9EC9C26DADB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5E1BF6B7-5E77-4BEA-800A-891CCED01A8D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E1BF6B7-5E77-4BEA-800A-891CCED01A8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E1BF6B7-5E77-4BEA-800A-891CCED01A8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E1BF6B7-5E77-4BEA-800A-891CCED01A8D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
