@@ -15,7 +15,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonToEntity", "JsonToEntit
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonToEntity-Console", "JsonToEntity-Console\JsonToEntity-Console.csproj", "{B79CE733-CC16-4096-A63B-A9EC9C26DADB}"
 EndProject
+<<<<<<< HEAD
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RedisTool", "RedisTool\RedisTool.csproj", "{5E1BF6B7-5E77-4BEA-800A-891CCED01A8D}"
+=======
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonToClass.Core", "JsonToClass.Core\JsonToClass.Core.csproj", "{1BAA5FF5-AB43-4BF9-A5F9-45EEE84CBE7B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonToClass-Console", "JsonToClass-Console\JsonToClass-Console.csproj", "{DC901D04-CA91-4F10-90CA-B63F7451781B}"
+>>>>>>> upstream/master
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,10 +53,21 @@ Global
 		{B79CE733-CC16-4096-A63B-A9EC9C26DADB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B79CE733-CC16-4096-A63B-A9EC9C26DADB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B79CE733-CC16-4096-A63B-A9EC9C26DADB}.Release|Any CPU.Build.0 = Release|Any CPU
+<<<<<<< HEAD
 		{5E1BF6B7-5E77-4BEA-800A-891CCED01A8D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5E1BF6B7-5E77-4BEA-800A-891CCED01A8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5E1BF6B7-5E77-4BEA-800A-891CCED01A8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5E1BF6B7-5E77-4BEA-800A-891CCED01A8D}.Release|Any CPU.Build.0 = Release|Any CPU
+=======
+		{1BAA5FF5-AB43-4BF9-A5F9-45EEE84CBE7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BAA5FF5-AB43-4BF9-A5F9-45EEE84CBE7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BAA5FF5-AB43-4BF9-A5F9-45EEE84CBE7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BAA5FF5-AB43-4BF9-A5F9-45EEE84CBE7B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC901D04-CA91-4F10-90CA-B63F7451781B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC901D04-CA91-4F10-90CA-B63F7451781B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC901D04-CA91-4F10-90CA-B63F7451781B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC901D04-CA91-4F10-90CA-B63F7451781B}.Release|Any CPU.Build.0 = Release|Any CPU
+>>>>>>> upstream/master
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

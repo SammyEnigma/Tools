@@ -32,7 +32,7 @@ namespace JsonToEntity
             SetCommentFormatter();
         }
 
-        public void Parse(string inputFile)
+        public void Parse(string baseInputPath, string inputFile)
         {
             // 加载文件
             var content = File.ReadAllText(inputFile);
@@ -101,9 +101,8 @@ namespace JsonToEntity
                 }
             }
 
-            var extension = string.Empty;
-            var parsed = RenderClass(list, out extension);
-            Output(inputFile, parsed, extension);
+            var parsed = RenderClass(list);
+            Output(baseInputPath, inputFile, parsed);
         }
 
         private IEnumerable<INamedTypeSymbol> GetAllTypes(INamespaceSymbol @namespace)
@@ -125,10 +124,9 @@ namespace JsonToEntity
                 yield return nestedType;
         }
 
-        private string RenderClass(List<ClassInfo> info, out string outFileExtension)
+        private string RenderClass(List<ClassInfo> info)
         {
             PreProcess(info);
-            outFileExtension = _engine.GetOutFileExtension();
             return _engine.Render(info);
         }
 
@@ -167,6 +165,7 @@ namespace JsonToEntity
                         _typeMapper = new CSharpTypeMapper();
                     }
                     break;
+                default: throw new NotSupportedException($"暂不支持的语言类型：{_lang}");
             }
         }
 
@@ -180,16 +179,49 @@ namespace JsonToEntity
                         _commentFormatter = new CSharpCommentFormatter();
                     }
                     break;
+                default: throw new NotSupportedException($"暂不支持的语言类型：{_lang}");
             }
         }
 
-        private void Output(string input, string content, string extension)
+        private string GetOutFileExtension()
         {
-            var out_name = Path.Combine(
-                _output,
-                Path.GetFileNameWithoutExtension(input) + "_out." + extension);
+            switch (_lang)
+            {
+                case "c#":
+                case "csharp":
+                    {
+                        return "cs";
+                    }
+                default: return string.Empty;
+            }
+        }
 
-            File.WriteAllBytes(out_name, Encoding.UTF8.GetBytes(content));
+        private void Output(string baseInputPath, string inputFile, string content)
+        {
+            var relative = GetRelativePath(baseInputPath, inputFile);
+            var name = Path.GetFileNameWithoutExtension(inputFile);
+            var extension = GetOutFileExtension();
+
+            var out_path = Path.Combine(
+                _output,
+                relative);
+            var out_file = Path.Combine(
+                out_path,
+                $"{name}_out.{extension}");
+
+            if (!Directory.Exists(out_path))
+                Directory.CreateDirectory(out_path);
+
+            File.WriteAllBytes(out_file, Encoding.UTF8.GetBytes(content));
+        }
+
+        private string GetRelativePath(string baseInputPath, string inputFile)
+        {
+            var name = Path.GetFileName(inputFile);
+            if (baseInputPath == inputFile)
+                return string.Empty;
+
+            return inputFile.Replace(baseInputPath, string.Empty).Replace(name, string.Empty);
         }
     }
 }

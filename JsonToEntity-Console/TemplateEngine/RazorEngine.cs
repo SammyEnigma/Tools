@@ -1,6 +1,8 @@
 ﻿using JsonToEntity.Model;
 using RazorLight;
 using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
 
 namespace JsonToEntity.Core
 {
@@ -10,20 +12,23 @@ namespace JsonToEntity.Core
         public RazorEngine(string template)
             : base(template)
         {
+            if (_template_path.IsRelativePath())
+                _template_path = Path.GetFullPath(_template_path);
+
             _engine = new RazorLightEngineBuilder()
              .UseFilesystemProject(_template_path)
              .UseMemoryCachingProvider()
              .Build();
         }
 
-        public override string GetOutFileExtension()
-        {
-            return "html"; // 也可以因为根据生成的语言来决定，比如这里可以返回"cs"
-        }
-
         public override string ParseLangFromTemplate()
         {
-            return "c#";
+            var content = File.ReadAllText(_template);
+            var match = Regex.Match(content, "Language = \".+\";");
+            if (match.Success)
+                return match.Value.Split('"')[1];
+
+            throw new System.InvalidOperationException("请指定模板文件的语言选项：@{ Language = \"c#\"; }");
         }
 
         public override string Render(List<ClassInfo> model)

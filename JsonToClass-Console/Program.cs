@@ -3,9 +3,10 @@ using CommandLine.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using Xamasoft.JsonClassGenerator;
+using JsonDictConvert;
 
-namespace JsonToEntity
+namespace JsonToClass
 {
     class Options
     {
@@ -15,21 +16,21 @@ namespace JsonToEntity
         [Option('o', "output", Required = false, HelpText = "输出文件路径")]
         public string OutputPath { get; set; }
 
-        [Option('t', "template", Required = true, HelpText = "模板文件路径")]
-        public string TemplateFile { get; set; }
+        [Option('m', "multiple", Required = false, HelpText = "是否生成单一文件")]
+        public bool Multiple { get; set; }
 
-        [Usage(ApplicationAlias = "jsonto")]
+        [Usage(ApplicationAlias = "genclass")]
         public static IEnumerable<Example> Examples
         {
             get
             {
                 return new List<Example>()
                 {
-                    new Example("将指定的c#类型映射到其它语言中", new Options
+                    new Example("将json转换成c#类", new Options
                     {
                         InputPath = "c:/tmp/input",
-                        OutputPath = "c:/tmp/output" ,
-                        TemplateFile = "c:/tmp/template/t1.cshtml"
+                        OutputPath = "c:/tmp/output",
+                        Multiple = true
                     })
                 };
             }
@@ -60,30 +61,45 @@ namespace JsonToEntity
                 return;
             }
 
-            if (!EnsureTemplate(opts, out string msg3))
-            {
-                WriteError(msg3);
-                WriteError("程序已退出！");
-                return;
-            }
-
             WriteWarn($"输入文件路径为：{opts.InputPath}");
             WriteWarn($"输出文件路径为：{opts.OutputPath}");
-            WriteWarn($"模板文件为：{opts.TemplateFile}");
 
-            var trans = new Transformer(opts.OutputPath, opts.TemplateFile);
             Console.WriteLine("processing...");
-            foreach (var file in GetFiles(opts.InputPath).Where(
-                p => !p.Contains("/bin") &&
-                !p.Contains("/obj") &&
-                !p.Contains("/debug") &&
-                !p.Contains("/release")))
+            foreach (var file in GetFiles(opts.InputPath))
             {
                 var tmp = file.GetNormalized();
-                trans.Parse(opts.InputPath, tmp);
+                var content = File.ReadAllText(tmp);
+                if (string.IsNullOrEmpty(content))
+                    continue;
+
+                content = PreProcess(content);
+                var gen = new JsonClassGenerator
+                {
+                    Namespace = GetOutputNamespace(opts, tmp),
+                    InternalVisibility = false,
+                    UseProperties = true,
+                    TargetFolder = GetOutputFilePath(opts, tmp),
+                    MainClass = GetOutputClass(tmp),
+                    UsePascalCase = true,
+                    SingleFile = !opts.Multiple,
+                    Example = content
+                };
+                using (var sw = new StringWriter())
+                {
+                    gen.OutputStream = sw;
+                    gen.GenerateClasses();
+                    sw.Flush();
+                }
+
                 Console.WriteLine("processed a file: " + tmp);
             }
             Console.WriteLine("done!");
+        }
+
+        private static string PreProcess(string content)
+        {
+            var json_dict = content.ToJsonDict();
+            return content;
         }
 
         private static bool EnsureInput(Options options, out string msg)
@@ -116,26 +132,46 @@ namespace JsonToEntity
             return true;
         }
 
-        private static bool EnsureTemplate(Options options, out string msg)
-        {
-            msg = string.Empty;
-            if (string.IsNullOrEmpty(options.TemplateFile))
-            {
-                msg = "模板文件为空";
-                return false;
-            }
-
-            options.TemplateFile = options.TemplateFile.GetNormalized();
-            return true;
-        }
-
         private static string[] GetFiles(string path)
         {
             FileAttributes attr = File.GetAttributes(path);
             if ((attr & FileAttributes.Directory) == FileAttributes.Directory)
-                return Directory.GetFiles(path, "*.cs", SearchOption.AllDirectories);
+                return Directory.GetFiles(path, "*.json", SearchOption.AllDirectories);
             else
                 return new string[] { path };
+        }
+
+        private static string GetOutputNamespace(Options options, string inputFile)
+        {
+            var relative = GetRelativePath(options.InputPath, inputFile);
+            return relative.Replace('/', '.').TrimEnd('.');
+        }
+
+        private static string GetOutputClass(string inputFile)
+        {
+            return Path.GetFileNameWithoutExtension(inputFile);
+        }
+
+        private static string GetOutputFilePath(Options options, string inputFile)
+        {
+            var relative = GetRelativePath(options.InputPath, inputFile);
+            var out_path = Path.Combine(
+                options.OutputPath,
+                relative);
+
+            if (!Directory.Exists(out_path))
+                Directory.CreateDirectory(out_path);
+
+            return out_path;
+        }
+
+        private static string GetRelativePath(string baseInputPath, string inputFile)
+        {
+            var name = Path.GetFileName(inputFile);
+            if (baseInputPath == inputFile)
+                return string.Empty;
+
+            return inputFile.Replace(baseInputPath, string.Empty).Replace(name, string.Empty);
         }
 
         private static void WriteError(string msg)
