@@ -18,6 +18,9 @@ namespace JsonToEntity
         [Option('t', "template", Required = true, HelpText = "模板文件路径")]
         public string TemplateFile { get; set; }
 
+        [Option('c', "comment", Required = false, HelpText = "备份的注释信息文件路径（用于还原注释）")]
+        public string CommentPath { get; set; }
+
         [Usage(ApplicationAlias = "jsonto")]
         public static IEnumerable<Example> Examples
         {
@@ -67,11 +70,19 @@ namespace JsonToEntity
                 return;
             }
 
+            if (!EnsureComment(opts, out string msg4))
+            {
+                WriteError(msg4);
+                WriteError("程序已退出！");
+                return;
+            }
+
             WriteWarn($"输入文件路径为：{opts.InputPath}");
             WriteWarn($"输出文件路径为：{opts.OutputPath}");
             WriteWarn($"模板文件为：{opts.TemplateFile}");
+            WriteWarn($"备份注释信息文件路径为：{opts.CommentPath}");
 
-            var trans = new Transformer(opts.OutputPath, opts.TemplateFile);
+            var trans = new Transformer(opts.OutputPath, opts.TemplateFile, opts.CommentPath);
             Console.WriteLine("processing...");
             foreach (var file in GetFiles(opts.InputPath).Where(
                 p => !p.Contains("/bin") &&
@@ -126,6 +137,15 @@ namespace JsonToEntity
             }
 
             options.TemplateFile = options.TemplateFile.GetNormalized();
+            return true;
+        }
+
+        private static bool EnsureComment(Options options, out string msg)
+        {
+            msg = string.Empty;
+            if (!string.IsNullOrEmpty(options.CommentPath))
+                options.CommentPath = options.CommentPath.GetNormalized();
+
             return true;
         }
 
