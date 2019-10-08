@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Xamasoft.JsonClassGenerator;
-using JsonDictConvert;
 
 namespace JsonToClass
 {
@@ -98,7 +97,7 @@ namespace JsonToClass
 
         private static string PreProcess(string content)
         {
-            var json_dict = content.ToJsonDict();
+            // content为原json字符串，可以在此处添加自定义的json处理逻辑
             return content;
         }
 
