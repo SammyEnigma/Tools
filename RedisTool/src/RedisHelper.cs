@@ -16,6 +16,10 @@ namespace RedisTool.Helper
             _redis = redis;
         }
 
+        public IDatabase DB()
+        {
+            return _redis.DB();
+        }
         /// <summary>
         /// 获取值，不支持的类型将不会被赋值
         /// </summary>
