@@ -21,8 +21,9 @@ namespace LightMessager.Helper
      * https://www.rabbitmq.com/queues.html
      * https://www.rabbitmq.com/confirms.html
      * https://stackoverflow.com/questions/4444208/delayed-message-in-rabbitmq
+     * 生产者用注入的模式，消费者走Console直接创建对象
     */
-    public sealed class RabbitMQHelper
+    public sealed class RabbitMQProducer : IRabbitMQProducer
     {
         static ConnectionFactory factory;
         static IConnection connection;
@@ -34,21 +35,14 @@ namespace LightMessager.Helper
         static ConcurrentQueue<BaseMessage> topic_queue;
         static ConcurrentQueue<BaseMessage> fanout_queue;
         static ConcurrentDictionary<Type, QueueInfo> dict_info;
-        static ConcurrentDictionary<Type, object> dict_func;
-        static ConcurrentDictionary<(Type, string), QueueInfo> dict_info_name; // with name
-        static ConcurrentDictionary<(Type, string), object> dict_func_name; // with name
         static ConcurrentDictionary<Type, string> dict_info_fanout;
-        static ConcurrentDictionary<Type, object> dict_func_fanout;
         static ConcurrentDictionary<Type, ObjectPool<IPooledWapper>> pools;
-        static readonly ushort prefetch_count;
-        static object lockobj = new object();
-        static Logger _logger = LogManager.GetLogger("RabbitMQHelper");
         private static IMessageQueueHelper _message_queue_helper;
 
-        private RabbitMQHelper()
+        private RabbitMQProducer()
         { }
 
-        public RabbitMQHelper(IConfiguration configurationRoot, IMessageQueueHelper messageQueueHelper)
+        public RabbitMQProducer(IConfiguration configurationRoot, IMessageQueueHelper messageQueueHelper)
         {
             factory = new ConnectionFactory();
             factory.UserName = configurationRoot.GetSection("LightMessager:UserName").Value; // "admin";
@@ -61,9 +55,8 @@ namespace LightMessager.Helper
             connection = factory.CreateConnection();
             _message_queue_helper = messageQueueHelper;
         }
-        static RabbitMQHelper()
+        static RabbitMQProducer()
         {
-            prefetch_count = 100;
             prepersist_count = 0;
             default_retry_wait = 1000; // 1秒
             default_retry_count = 3; // 消息重试最大3次
@@ -72,11 +65,7 @@ namespace LightMessager.Helper
             topic_queue = new ConcurrentQueue<BaseMessage>();
             fanout_queue = new ConcurrentQueue<BaseMessage>();
             dict_info = new ConcurrentDictionary<Type, QueueInfo>();
-            dict_func = new ConcurrentDictionary<Type, object>();
-            dict_info_name = new ConcurrentDictionary<(Type, string), QueueInfo>();
-            dict_func_name = new ConcurrentDictionary<(Type, string), object>();
             dict_info_fanout = new ConcurrentDictionary<Type, string>();
-            dict_func_fanout = new ConcurrentDictionary<Type, object>();
             pools = new ConcurrentDictionary<Type, ObjectPool<IPooledWapper>>();
 
             //开启轮询检测，扫描重试队列，重发消息
@@ -88,304 +77,23 @@ namespace LightMessager.Helper
                     BaseMessage send_item;
                     while (direct_queue.TryDequeue(out send_item))
                     {
-                        Send(send_item);
+                        SendDirect(send_item);
                     }
 
                     BaseMessage pub_item;
                     while (topic_queue.TryDequeue(out pub_item))
                     {
-                        Publish(pub_item, pub_item.Pattern);
+                        SendTopic(pub_item, pub_item.Pattern);
                     }
 
                     BaseMessage pub_item_fanout;
                     while (fanout_queue.TryDequeue(out pub_item_fanout))
                     {
-                        FanoutPublish(pub_item_fanout);
+                        SendFanout(pub_item_fanout);
                     }
                     Thread.Sleep(1000 * 5);
                 }
             }).Start();
-        }
-
-        /// <summary>
-        /// 注册消息处理器
-        /// </summary>
-        /// <typeparam name="TMessage">消息类型</typeparam>
-        /// <typeparam name="THandler">消息处理器类型</typeparam>
-        /// <param name="redeliveryCheck">是否开启重发确认；如果消息处理器逻辑已经实现为幂等则不需要开启以便节省计算资源，否则请打开该选项</param>
-        public static void RegisterHandler<TMessage, THandler>(bool redeliveryCheck = false)
-            where THandler : BaseHandleMessages<TMessage>
-            where TMessage : BaseMessage
-        {
-            try
-            {
-                var type = typeof(TMessage);
-                if (!dict_func.ContainsKey(type))
-                {
-                    var handler = dict_func.GetOrAdd(type, t => Activator.CreateInstance<THandler>()) as THandler;
-                    var channel = connection.CreateModel();
-                    var consumer = new EventingBasicConsumer(channel);
-                    /*
-                      @param prefetchSize maximum amount of content (measured in octets) that the server will deliver, 0 if unlimited
-                      @param prefetchCount maximum number of messages that the server will deliver, 0 if unlimited
-                      @param global true if the settings should be applied to the entire channel rather than each consumer
-                    */
-                    channel.BasicQos(0, prefetch_count, false);
-                    consumer.Received += async (model, ea) =>
-                    {
-                        var json = Encoding.UTF8.GetString(ea.Body);
-                        var msg = JsonConvert.DeserializeObject<TMessage>(json);
-                        if (redeliveryCheck)
-                        {
-                            if (!ea.Redelivered) // 之前一定没有处理过该条消息
-                            {
-                                await handler.Handle(msg);
-                                if (msg.NeedNAck)
-                                {
-                                    channel.BasicNack(ea.DeliveryTag, false, true);
-                                    _message_queue_helper.Update(
-                                    msg.MsgHash,
-                                    fromStatus: MsgStatus.ArrivedBroker,
-                                    toStatus: MsgStatus.Exception);
-                                }
-                                else
-                                {
-                                    channel.BasicAck(ea.DeliveryTag, false);
-                                    _message_queue_helper.Update(
-                                    msg.MsgHash,
-                                    fromStatus: MsgStatus.ArrivedBroker,
-                                    toStatus: MsgStatus.Consumed);
-                                }
-                            }
-                            else
-                            {
-                                var m = _message_queue_helper.GetModelBy(msg.MsgHash);
-                                if (m.Status == MsgStatus.Exception)
-                                {
-                                    await handler.Handle(msg);
-                                    if (msg.NeedNAck)
-                                    {
-                                        channel.BasicNack(ea.DeliveryTag, false, true);
-                                    }
-                                    else
-                                    {
-                                        channel.BasicAck(ea.DeliveryTag, false);
-                                    }
-                                }
-                                else if (m.Status == MsgStatus.ArrivedBroker)
-                                {
-                                    // 相对特殊的一种情况，Redelivered为true，但是本地消息实际上只到达第三档状态
-                                    // 说明在消息刚从broker出来，rabbitmq重置了链接
-                                    await handler.Handle(msg);
-                                    if (msg.NeedNAck)
-                                    {
-                                        channel.BasicNack(ea.DeliveryTag, false, true);
-                                    }
-                                    else
-                                    {
-                                        channel.BasicAck(ea.DeliveryTag, false);
-                                    }
-                                }
-                                else
-                                {
-                                    // 为了保持幂等这里不做任何处理
-                                }
-                            }
-                        }
-                        else
-                        {
-                            await handler.Handle(msg);
-                            if (msg.NeedNAck)
-                            {
-                                channel.BasicNack(ea.DeliveryTag, false, true);
-                            }
-                            else
-                            {
-                                channel.BasicAck(ea.DeliveryTag, false);
-                            }
-                        }
-                    };
-
-                    var exchange = string.Empty;
-                    var route_key = string.Empty;
-                    var queue = string.Empty;
-                    EnsureQueue(channel, type, out exchange, out route_key, out queue);
-                    channel.BasicConsume(queue, false, consumer);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Debug("RegisterHandler()出错，异常：" + ex.Message + "；堆栈：" + ex.StackTrace);
-            }
-        }
-
-        /// <summary>
-        /// 注册消息处理器，根据模式匹配接收消息
-        /// </summary>
-        /// <typeparam name="TMessage">消息类型</typeparam>
-        /// <typeparam name="THandler">消息处理器类型</typeparam>
-        /// <param name="subscriberName">订阅器的名称</param>
-        /// <param name="redeliveryCheck">是否开启重发确认；如果消息处理器逻辑已经实现为幂等则不需要开启以便节省计算资源，否则请打开该选项</param>
-        /// <param name="subscribePatterns">订阅器支持的消息模式</param>
-        public static void RegisterHandlerAs<TMessage, THandler>(string subscriberName, bool redeliveryCheck = false, params string[] subscribePatterns)
-            where THandler : BaseHandleMessages<TMessage>
-            where TMessage : BaseMessage
-        {
-            if (string.IsNullOrWhiteSpace(subscriberName))
-            {
-                throw new ArgumentNullException("subscriberName");
-            }
-
-            if (subscribePatterns == null || subscribePatterns.Length == 0)
-            {
-                throw new ArgumentNullException("subscribePatterns");
-            }
-
-            try
-            {
-                var key = (typeof(TMessage), subscriberName);
-                if (!dict_func_name.ContainsKey(key))
-                {
-                    var handler = dict_func_name.GetOrAdd((typeof(TMessage), subscriberName), p => Activator.CreateInstance<THandler>()) as THandler;
-                    var channel = connection.CreateModel();
-                    var consumer = new EventingBasicConsumer(channel);
-                    /*
-                      @param prefetchSize maximum amount of content (measured in octets) that the server will deliver, 0 if unlimited
-                      @param prefetchCount maximum number of messages that the server will deliver, 0 if unlimited
-                      @param global true if the settings should be applied to the entire channel rather than each consumer
-                    */
-                    channel.BasicQos(0, prefetch_count, false);
-                    consumer.Received += async (model, ea) =>
-                    {
-                        var json = Encoding.UTF8.GetString(ea.Body);
-                        var msg = JsonConvert.DeserializeObject<TMessage>(json);
-                        if (redeliveryCheck)
-                        {
-                            if (!ea.Redelivered) // 之前一定没有处理过该条消息
-                            {
-                                await handler.Handle(msg);
-                                if (msg.NeedNAck)
-                                {
-                                    channel.BasicNack(ea.DeliveryTag, false, true);
-                                    _message_queue_helper.Update(
-                                    msg.MsgHash,
-                                    fromStatus: MsgStatus.ArrivedBroker,
-                                    toStatus: MsgStatus.Exception);
-                                }
-                                else
-                                {
-                                    channel.BasicAck(ea.DeliveryTag, false);
-                                    _message_queue_helper.Update(
-                                    msg.MsgHash,
-                                    fromStatus: MsgStatus.ArrivedBroker,
-                                    toStatus: MsgStatus.Consumed);
-                                }
-                            }
-                            else
-                            {
-                                var m = _message_queue_helper.GetModelBy(msg.MsgHash);
-                                if (m.Status == MsgStatus.Exception)
-                                {
-                                    await handler.Handle(msg);
-                                    if (msg.NeedNAck)
-                                    {
-                                        channel.BasicNack(ea.DeliveryTag, false, true);
-                                    }
-                                    else
-                                    {
-                                        channel.BasicAck(ea.DeliveryTag, false);
-                                    }
-                                }
-                                else if (m.Status == MsgStatus.ArrivedBroker)
-                                {
-                                    // 相对特殊的一种情况，Redelivered为true，但是本地消息实际上只到达第三档状态
-                                    // 说明在消息刚从broker出来，rabbitmq重置了链接
-                                    await handler.Handle(msg);
-                                    if (msg.NeedNAck)
-                                    {
-                                        channel.BasicNack(ea.DeliveryTag, false, true);
-                                    }
-                                    else
-                                    {
-                                        channel.BasicAck(ea.DeliveryTag, false);
-                                    }
-                                }
-                                else
-                                {
-                                    // 为了保持幂等这里不做任何处理
-                                }
-                            }
-                        }
-                        else
-                        {
-                            await handler.Handle(msg);
-                            if (msg.NeedNAck)
-                            {
-                                channel.BasicNack(ea.DeliveryTag, false, true);
-                            }
-                            else
-                            {
-                                channel.BasicAck(ea.DeliveryTag, false);
-                            }
-                        }
-                    };
-
-                    var exchange = string.Empty;
-                    var queue = string.Empty;
-                    EnsureQueue(channel, typeof(TMessage), subscriberName, out exchange, out queue, subscribePatterns);
-                    channel.BasicConsume(queue, false, consumer);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Debug("RegisterHandler(string subscriberName)出错，异常：" + ex.Message + "；堆栈：" + ex.StackTrace);
-            }
-        }
-
-        /// <summary>
-        /// 注册消息处理器,fanout模式
-        /// </summary>
-        /// <typeparam name="TMessage">消息类型</typeparam>
-        /// <typeparam name="THandler">消息处理器类型</typeparam>
-        public static void RegisterHandlerForFanout<TMessage, THandler>()
-            where THandler : BaseHandleMessages<TMessage>
-            where TMessage : BaseMessage
-        {
-            try
-            {
-                var type = typeof(TMessage);
-                if (!dict_func.ContainsKey(type))
-                {
-                    var handler = dict_func_fanout.GetOrAdd(type, t => Activator.CreateInstance<THandler>()) as THandler;
-                    var channel = connection.CreateModel();
-                    var consumer = new EventingBasicConsumer(channel);
-
-                    var exchange = string.Empty;
-                    var queue = string.Empty;
-                    ConsumerEnsureQueue(channel, type, out exchange, out queue);
-                    TMessage msg = null;//闭包获取数据
-                    try
-                    {
-                        consumer.Received += async (model, ea) =>
-                        {
-                            var json = Encoding.UTF8.GetString(ea.Body);
-                            msg = JsonConvert.DeserializeObject<TMessage>(json);
-                            await handler.Handle(msg);
-                        };
-                    }
-                    catch (Exception ex)
-                    {
-                        _message_queue_helper.UpdateCanbeRemoveIsFalse(msg.MsgHash);
-                        _logger.Error("RegisterHandler()出错，异常：" + ex.Message + "；堆栈：" + ex.StackTrace);
-                    }
-
-                    channel.BasicConsume(queue, true, consumer);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Debug("RegisterHandler()出错，异常：" + ex.Message + "；堆栈：" + ex.StackTrace);
-            }
         }
 
         /// <summary>
@@ -395,7 +103,36 @@ namespace LightMessager.Helper
         /// <param name="message">消息</param>
         /// <param name="delaySend">延迟多少毫秒发送消息</param>
         /// <returns>发送成功返回true，否则返回false</returns>
-        public static bool Send(BaseMessage message, int delaySend = 0)
+        public bool Send(BaseMessage message, int delaySend = 0)
+        {
+            return SendDirect(message, delaySend);
+        }
+
+        /// <summary>
+        /// 发布一条消息
+        /// </summary>
+        /// <typeparam name="TMessage"></typeparam>
+        /// <param name="message">消息</param>
+        /// <param name="pattern">消息满足的模式（也就是routeKey）</param>
+        /// <param name="delaySend">延迟多少毫秒发布消息</param>
+        /// <returns>发布成功返回true，否则返回false</returns>
+        public bool Publish(BaseMessage message, string pattern, int delaySend = 0)
+        {
+            return SendTopic(message, pattern, delaySend);
+        }
+
+        /// <summary>
+        /// fanout模式发布消息,此模式适合两种及以上业务用同一条消息订阅使用，如果只有一种业务或者单机建议用默认模式
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="delaySend"></param>
+        /// <returns></returns>
+        public bool FanoutPublish(BaseMessage message)
+        {
+            return SendFanout(message);
+        }
+
+        private static bool SendDirect(BaseMessage message, int delaySend = 0)
         {
             if (string.IsNullOrWhiteSpace(message.Source))
             {
@@ -453,15 +190,7 @@ namespace LightMessager.Helper
             return true;
         }
 
-        /// <summary>
-        /// 发布一条消息
-        /// </summary>
-        /// <typeparam name="TMessage"></typeparam>
-        /// <param name="message">消息</param>
-        /// <param name="pattern">消息满足的模式（也就是routeKey）</param>
-        /// <param name="delaySend">延迟多少毫秒发布消息</param>
-        /// <returns>发布成功返回true，否则返回false</returns>
-        public static bool Publish(BaseMessage message, string pattern, int delaySend = 0)
+        private static bool SendTopic(BaseMessage message, string pattern, int delaySend = 0)
         {
             if (string.IsNullOrWhiteSpace(message.Source))
             {
@@ -524,13 +253,7 @@ namespace LightMessager.Helper
             return true;
         }
 
-        /// <summary>
-        /// fanout模式发布消息,此模式适合两种及以上业务用同一条消息订阅使用，如果只有一种业务或者单机建议用默认模式
-        /// </summary>
-        /// <param name="message"></param>
-        /// <param name="delaySend"></param>
-        /// <returns></returns>
-        public static bool FanoutPublish(BaseMessage message)
+        private static bool SendFanout(BaseMessage message)
         {
             if (string.IsNullOrWhiteSpace(message.Source))
             {
@@ -688,29 +411,6 @@ namespace LightMessager.Helper
             }
         }
 
-        private static void EnsureQueue(IModel channel, Type messageType, string subscriberName, out string exchange, out string queue, params string[] subscribePatterns)
-        {
-            var key = (messageType, subscriberName);
-            if (!dict_info_name.ContainsKey(key))
-            {
-                var info = GetQueueInfo(messageType, subscriberName);
-                exchange = "topic." + info.Exchange;
-                queue = info.Queue + "." + subscriberName;
-                channel.ExchangeDeclare(exchange, ExchangeType.Topic, durable: true);
-                channel.QueueDeclare(queue, durable: true, exclusive: false, autoDelete: false);
-                foreach (var pattern in subscribePatterns)
-                {
-                    channel.QueueBind(queue, exchange, routingKey: pattern);
-                }
-            }
-            else
-            {
-                var info = GetQueueInfo(messageType, subscriberName);
-                exchange = "topic." + info.Exchange;
-                queue = info.Queue + "." + subscriberName;
-            }
-        }
-
         private static void EnsureQueue(IModel channel, Type messageType, out string exchange, out string routeKey, out string queue, string pattern, int delaySend = 0)
         {
             var type = messageType;
@@ -765,32 +465,9 @@ namespace LightMessager.Helper
             }
         }
 
-        private static void ConsumerEnsureQueue(IModel channel, Type messageType, out string exchange, out string queue)
-        {
-            var info = GetQueueInfoForFanout(messageType);
-            exchange = info;
-            channel.ExchangeDeclare(exchange, ExchangeType.Fanout, durable: true);
-            queue = channel.QueueDeclare().QueueName;
-            channel.QueueBind(queue: queue, exchange: exchange, routingKey: "", arguments: null);
-
-        }
-
         private static QueueInfo GetQueueInfo(Type messageType)
         {
             var type_name = messageType.IsGenericType ? messageType.GenericTypeArguments[0].Name : messageType.Name;
-            var info = dict_info.GetOrAdd(messageType, t => new QueueInfo
-            {
-                Exchange = type_name + ".exchange",
-                DefaultRouteKey = type_name + ".input",
-                Queue = type_name + ".input"
-            });
-
-            return info;
-        }
-
-        private static QueueInfo GetQueueInfo(Type messageType, string name)
-        {
-            var type_name = messageType.IsGenericType ? messageType.GenericTypeArguments[0].Name + "[" + name + "]" : messageType.Name;
             var info = dict_info.GetOrAdd(messageType, t => new QueueInfo
             {
                 Exchange = type_name + ".exchange",
@@ -813,11 +490,6 @@ namespace LightMessager.Helper
         {
             return str.GetHashCode();
         }
-        private class QueueInfo
-        {
-            public string Exchange;
-            public string DefaultRouteKey;
-            public string Queue;
-        }
+
     }
 }
