@@ -44,6 +44,7 @@ namespace LightMessager.Helper
         }
         static RabbitMQConsumer()
         {
+            prefetch_count = 100;
             dict_info = new ConcurrentDictionary<Type, QueueInfo>();
             dict_func = new ConcurrentDictionary<Type, object>();
             dict_info_name = new ConcurrentDictionary<(Type, string), QueueInfo>();
