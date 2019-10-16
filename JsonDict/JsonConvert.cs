@@ -148,6 +148,33 @@ namespace JsonDictConvert
             return tmp.GetInt(keys[i], @default);
         }
 
+        public static long GetLong(this Dictionary<string, object> dict, string key, long? @default = null)
+        {
+            object ret = null;
+            if (dict.TryGetValue(key, out ret))
+            {
+                return Convert.ToInt64(ret);
+            }
+
+            if (@default.HasValue)
+                return @default.Value;
+            throw new Exception("获取long异常，键不存在或值不是long类型");
+        }
+
+        public static long GetLongByPath(this Dictionary<string, object> dict, string keyPath, long? @default = null)
+        {
+            var keys = keyPath.Split('\\');
+            var i = 0;
+            var tmp = dict;
+            while (i < keys.Length - 1)
+            {
+                tmp = tmp.GetDict(keys[i]);
+                i++;
+            }
+
+            return tmp.GetLong(keys[i], @default);
+        }
+
         public static double GetDouble(this Dictionary<string, object> dict, string key, double? @default = null)
         {
             object ret = null;
