@@ -57,10 +57,21 @@ namespace LogTools
             _log = LogManager.GetLogger(GetType().ToString());
         }
 
+        public LoggerEx(string name)
+        {
+            _log = LogManager.GetLogger(name);
+        }
+
         public void Log(string message, object parameters = null)
         {
             if (parameters != null)
             {
+                if (parameters is Exception)
+                {
+                    _log.ConditionalDebug($"{message}。【发生异常，消息：{((Exception)parameters).Message}】");
+                    _log.ConditionalDebug($"【堆栈：{((Exception)parameters).StackTrace}】");
+                    return;
+                }
                 var i = 0;
                 var sb = new StringBuilder();
                 var items = GetProperties(parameters).ToList();
