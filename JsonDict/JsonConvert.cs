@@ -126,9 +126,12 @@ namespace JsonDictConvert
             object ret = null;
             if (dict.TryGetValue(key, out ret))
             {
+                if (ret == null)
+                    goto FALLBACK;
                 return Convert.ToInt32(ret);
             }
 
+            FALLBACK:
             if (@default.HasValue)
                 return @default.Value;
             throw new Exception("获取int异常，键不存在或值不是int类型");
@@ -153,9 +156,12 @@ namespace JsonDictConvert
             object ret = null;
             if (dict.TryGetValue(key, out ret))
             {
+                if (ret == null)
+                    goto FALLBACK;
                 return Convert.ToInt64(ret);
             }
 
+            FALLBACK:
             if (@default.HasValue)
                 return @default.Value;
             throw new Exception("获取long异常，键不存在或值不是long类型");
@@ -180,9 +186,12 @@ namespace JsonDictConvert
             object ret = null;
             if (dict.TryGetValue(key, out ret))
             {
+                if (ret == null)
+                    goto FALLBACK;
                 return Convert.ToDouble(ret);
             }
 
+            FALLBACK:
             if (@default.HasValue)
                 return @default.Value;
             throw new Exception("获取double异常，键不存在或值不是double类型");
@@ -207,9 +216,12 @@ namespace JsonDictConvert
             object ret = null;
             if (dict.TryGetValue(key, out ret))
             {
+                if (ret == null)
+                    goto FALLBACK;
                 return Convert.ToBoolean(ret);
             }
 
+            FALLBACK:
             if (@default.HasValue)
                 return @default.Value;
             throw new Exception("获取bool异常，键不存在或值不是bool类型");
