@@ -1,5 +1,4 @@
 ﻿using BenchmarkDotNet.Attributes;
-using BenchmarkTemplate;
 using System.Threading.Tasks;
 
 namespace BenchmarkTemplate
