@@ -62,32 +62,23 @@ namespace LogTools
             _log = LogManager.GetLogger(name);
         }
 
-        public void Log(string message, object parameters = null)
+        public void Log(string message, object parameter = null)
         {
-            if (parameters != null)
+            if (_log.IsDebugEnabled)
             {
-                if (parameters is Exception)
+                if (parameter != null)
                 {
-                    _log.ConditionalDebug($"{message}。【发生异常，消息：{((Exception)parameters).Message}】");
-                    _log.ConditionalDebug($"【堆栈：{((Exception)parameters).StackTrace}】");
-                    return;
+                    if (parameter is Exception)
+                    {
+                        _log.ConditionalDebug($"{message} ===>【发生异常，消息：{Environment.NewLine}{((Exception)parameter).Message}{Environment.NewLine}堆栈：{((Exception)parameter).StackTrace}】");
+                        return;
+                    }
+                    _log.ConditionalDebug($"{message} ===>参数：【{DumpObj(parameter)}】");
                 }
-                var i = 0;
-                var sb = new StringBuilder();
-                var items = GetProperties(parameters).ToList();
-                foreach (var prop in items)
+                else
                 {
-                    sb.Append(prop.Name);
-                    sb.Append("=");
-                    sb.Append(prop.Value);
-                    if (i++ != items.Count - 1)
-                        sb.Append("，");
+                    _log.ConditionalDebug(message);
                 }
-                _log.ConditionalDebug($"{message}，参数：【{sb.ToString()}】");
-            }
-            else
-            {
-                _log.ConditionalDebug(message);
             }
         }
 
@@ -105,12 +96,12 @@ namespace LogTools
             }
         }
 
-        public string DumpObj<T>(IList<T> objs, params Expression<Func<T, object>>[] fieldSelector)
+        public string DumpObjs<T>(IList<T> objs, params Expression<Func<T, object>>[] fieldSelector)
         {
-            return DumpObj(objs, 0, objs.Count, fieldSelector);
+            return DumpObjs(objs, 0, objs.Count, fieldSelector);
         }
 
-        public string DumpObj<T>(IList<T> objs, int skip = -1, int take = -1, params Expression<Func<T, object>>[] fieldSelector)
+        public string DumpObjs<T>(IList<T> objs, int skip = -1, int take = -1, params Expression<Func<T, object>>[] fieldSelector)
         {
             // https://stackoverflow.com/questions/671968/retrieving-property-name-from-lambda-expression
             IEnumerable<T> tmp = objs;
