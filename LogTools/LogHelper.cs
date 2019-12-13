@@ -64,27 +64,30 @@ namespace LogTools
 
         public void Log(string message, object parameter = null)
         {
-            if (_log.IsDebugEnabled)
+            if (parameter is Exception)
             {
-                if (parameter != null)
+                _log.Error($"{message} ===>【发生异常，消息：{Environment.NewLine}{((Exception)parameter).Message}{Environment.NewLine}堆栈：{((Exception)parameter).StackTrace}】");
+                return;
+            }
+            else
+            {
+                if (_log.IsDebugEnabled)
                 {
-                    if (parameter is Exception)
+                    if (parameter != null)
                     {
-                        _log.ConditionalDebug($"{message} ===>【发生异常，消息：{Environment.NewLine}{((Exception)parameter).Message}{Environment.NewLine}堆栈：{((Exception)parameter).StackTrace}】");
-                        return;
-                    }
-                    else if (parameter is string)
-                    {
-                        _log.ConditionalDebug($"{message} ===> 参数：【{parameter}】");
+                        if (parameter is string)
+                        {
+                            _log.ConditionalDebug($"{message} ===> 参数：【{parameter}】");
+                        }
+                        else
+                        {
+                            _log.ConditionalDebug($"{message} ===> 参数：【{DumpObj(parameter)}】");
+                        }
                     }
                     else
                     {
-                        _log.ConditionalDebug($"{message} ===> 参数：【{DumpObj(parameter)}】");
+                        _log.ConditionalDebug(message);
                     }
-                }
-                else
-                {
-                    _log.ConditionalDebug(message);
                 }
             }
         }
