@@ -73,7 +73,14 @@ namespace LogTools
                         _log.ConditionalDebug($"{message} ===>【发生异常，消息：{Environment.NewLine}{((Exception)parameter).Message}{Environment.NewLine}堆栈：{((Exception)parameter).StackTrace}】");
                         return;
                     }
-                    _log.ConditionalDebug($"{message} ===>参数：【{DumpObj(parameter)}】");
+                    else if (parameter is string)
+                    {
+                        _log.ConditionalDebug($"{message} ===> 参数：【{parameter}】");
+                    }
+                    else
+                    {
+                        _log.ConditionalDebug($"{message} ===> 参数：【{DumpObj(parameter)}】");
+                    }
                 }
                 else
                 {
