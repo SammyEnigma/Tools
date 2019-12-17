@@ -64,30 +64,52 @@ namespace LogTools
 
         public void Log(string message, object parameter = null)
         {
-            if (parameter is Exception)
+            if (_log.IsDebugEnabled)
             {
-                _log.Error($"{message} ===>【发生异常，消息：{Environment.NewLine}{((Exception)parameter).Message}{Environment.NewLine}堆栈：{((Exception)parameter).StackTrace}】");
-                return;
-            }
-            else
-            {
-                if (_log.IsDebugEnabled)
+                if (parameter != null)
                 {
-                    if (parameter != null)
+                    if (parameter is string)
                     {
-                        if (parameter is string)
-                        {
-                            _log.ConditionalDebug($"{message} ===> 参数：【{parameter}】");
-                        }
-                        else
-                        {
-                            _log.ConditionalDebug($"{message} ===> 参数：【{DumpObj(parameter)}】");
-                        }
+                        _log.ConditionalDebug($"{message} ===> 参数：【{parameter}】");
+                    }
+                    else if (parameter is Exception)
+                    {
+                        _log.ConditionalDebug($"{message} ===>【发生异常，消息：{Environment.NewLine}{((Exception)parameter).Message}{Environment.NewLine}堆栈：{((Exception)parameter).StackTrace}】");
                     }
                     else
                     {
-                        _log.ConditionalDebug(message);
+                        _log.ConditionalDebug($"{message} ===> 参数：【{DumpObj(parameter)}】");
                     }
+                }
+                else
+                {
+                    _log.ConditionalDebug(message);
+                }
+            }
+        }
+
+        public void Error(string message, object parameter = null)
+        {
+            if (_log.IsErrorEnabled || _log.IsFatalEnabled)
+            {
+                if (parameter != null)
+                {
+                    if (parameter is Exception)
+                    {
+                        _log.Error($"{message} ===>【发生异常，消息：{Environment.NewLine}{((Exception)parameter).Message}{Environment.NewLine}堆栈：{((Exception)parameter).StackTrace}】");
+                    }
+                    else if (parameter is string)
+                    {
+                        _log.Error($"{message} ===> 参数：【{parameter}】");
+                    }
+                    else
+                    {
+                        _log.Error($"{message} ===> 参数：【{DumpObj(parameter)}】");
+                    }
+                }
+                else
+                {
+                    _log.Error(message);
                 }
             }
         }
