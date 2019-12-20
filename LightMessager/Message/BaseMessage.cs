@@ -7,6 +7,9 @@ namespace LightMessager.Message
     {
         internal long MsgHash { set; get; }
 
+        /// <summary>
+        ///message唯一值，必须唯一，否则等于消息重发 
+        /// </summary>
         [JsonIgnore]
         public string Source { set; get; }
 
