@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LightMessager", "LightMessa
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BenchmarkTemplate", "BenchmarkTemplate\BenchmarkTemplate.csproj", "{08C63500-682B-41E7-8D7F-C4CEEDBBCB79}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedisTools", "RedisTools\RedisTools.csproj", "{4F227EF8-094E-44C3-B07C-C41C13105158}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{08C63500-682B-41E7-8D7F-C4CEEDBBCB79}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{08C63500-682B-41E7-8D7F-C4CEEDBBCB79}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{08C63500-682B-41E7-8D7F-C4CEEDBBCB79}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F227EF8-094E-44C3-B07C-C41C13105158}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F227EF8-094E-44C3-B07C-C41C13105158}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F227EF8-094E-44C3-B07C-C41C13105158}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F227EF8-094E-44C3-B07C-C41C13105158}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
