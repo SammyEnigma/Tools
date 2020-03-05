@@ -9,4 +9,10 @@
     <PackageReference Include="StackExchange.Redis" Version="2.0.601" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="FastMember">
+      <HintPath>lib\FastMember.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

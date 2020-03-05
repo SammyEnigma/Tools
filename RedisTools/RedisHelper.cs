@@ -1,4 +1,5 @@
-﻿using RedisTools.Serialization;
+﻿using FastMember;
+using RedisTools.Serialization;
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
@@ -13,6 +14,8 @@ namespace RedisTools
         private IDatabase _db;
         private static ConnectionMultiplexer _connector;
         private ISerializer _serializer;
+
+        public IDatabase Database { get { return this._db; } }
 
         public RedisHelper()
         {
@@ -70,11 +73,15 @@ namespace RedisTools
             EnsureKey(key);
 
             var valueBytes = _db.StringGet(key);
+            if (valueBytes.HasValue)
+            {
+                if (typeof(T).IsValueType)
+                    return valueBytes.As<T>();
+                else
+                    return _serializer.Deserialize<T>(valueBytes);
+            }
 
-            if (!valueBytes.HasValue)
-                return default(T);
-
-            return _serializer.Deserialize<T>(valueBytes);
+            return default(T);
         }
 
         public T Get<T>(string key, DateTimeOffset expiresAt)
@@ -82,12 +89,16 @@ namespace RedisTools
             EnsureKey(key);
 
             var valueBytes = _db.StringGet(key);
+            if (valueBytes.HasValue)
+            {
+                _db.KeyExpire(key, expiresAt.UtcDateTime.Subtract(DateTime.UtcNow));
+                if (typeof(T).IsValueType)
+                    return valueBytes.As<T>();
+                else
+                    return _serializer.Deserialize<T>(valueBytes);
+            }
 
-            if (!valueBytes.HasValue)
-                return default(T);
-
-            _db.KeyExpire(key, expiresAt.UtcDateTime.Subtract(DateTime.UtcNow));
-            return _serializer.Deserialize<T>(valueBytes);
+            return default(T);
         }
 
         public T Get<T>(string key, TimeSpan expiresIn)
@@ -95,12 +106,16 @@ namespace RedisTools
             EnsureKey(key);
 
             var valueBytes = _db.StringGet(key);
+            if (valueBytes.HasValue)
+            {
+                _db.KeyExpire(key, expiresIn);
+                if (typeof(T).IsValueType)
+                    return valueBytes.As<T>();
+                else
+                    return _serializer.Deserialize<T>(valueBytes);
+            }
 
-            if (!valueBytes.HasValue)
-                return default(T);
-
-            _db.KeyExpire(key, expiresIn);
-            return _serializer.Deserialize<T>(valueBytes);
+            return default(T);
         }
 
         public async Task<T> GetAsync<T>(string key)
@@ -108,11 +123,15 @@ namespace RedisTools
             EnsureKey(key);
 
             var valueBytes = await _db.StringGetAsync(key).ConfigureAwait(false);
+            if (valueBytes.HasValue)
+            {
+                if (typeof(T).IsValueType)
+                    return valueBytes.As<T>();
+                else
+                    return _serializer.Deserialize<T>(valueBytes);
+            }
 
-            if (!valueBytes.HasValue)
-                return default(T);
-
-            return _serializer.Deserialize<T>(valueBytes);
+            return default(T);
         }
 
         public async Task<T> GetAsync<T>(string key, DateTimeOffset expiresAt)
@@ -120,13 +139,17 @@ namespace RedisTools
             EnsureKey(key);
 
             var valueBytes = await _db.StringGetAsync(key).ConfigureAwait(false);
+            if (valueBytes.HasValue)
+            {
+                await _db.KeyExpireAsync(key, expiresAt.UtcDateTime.Subtract(DateTime.UtcNow))
+                    .ConfigureAwait(false);
+                if (typeof(T).IsValueType)
+                    return valueBytes.As<T>();
+                else
+                    return _serializer.Deserialize<T>(valueBytes);
+            }
 
-            if (!valueBytes.HasValue)
-                return default(T);
-
-            await _db.KeyExpireAsync(key, expiresAt.UtcDateTime.Subtract(DateTime.UtcNow))
-                .ConfigureAwait(false);
-            return _serializer.Deserialize<T>(valueBytes);
+            return default(T);
         }
 
         public async Task<T> GetAsync<T>(string key, TimeSpan expiresIn)
@@ -134,18 +157,28 @@ namespace RedisTools
             EnsureKey(key);
 
             var valueBytes = await _db.StringGetAsync(key).ConfigureAwait(false);
+            if (valueBytes.HasValue)
+            {
+                await _db.KeyExpireAsync(key, expiresIn).ConfigureAwait(false);
+                if (typeof(T).IsValueType)
+                    return valueBytes.As<T>();
+                else
+                    return _serializer.Deserialize<T>(valueBytes);
+            }
 
-            if (!valueBytes.HasValue)
-                return default(T);
-
-            await _db.KeyExpireAsync(key, expiresIn).ConfigureAwait(false);
-            return _serializer.Deserialize<T>(valueBytes);
+            return default(T);
         }
 
         public bool Add<T>(string key, T value)
         {
             EnsureKey(key);
 
+            // 说明：
+            // 这里T有可能是基础类型，这在redisvalue中是有完善的转换支持的，但是：
+            // 1. 顶层接口的样子变得很别扭
+            // 2. 仍然会有额外的对象生成
+            // 因此最后还是选择统一过一次Serialize
+            // link: https://stackoverflow.com/questions/15958830/c-sharp-generics-cast-generic-type-to-value-type
             var entryBytes = _serializer.Serialize(value);
 
             return _db.StringSet(key, entryBytes);
@@ -348,112 +381,58 @@ namespace RedisTools
         }
 
         #region hash
-        public bool HashDelete(string hashKey, string key)
+        public T HashFieldGet<T>(string hashKey, string field)
         {
             EnsureKey(hashKey);
-            EnsureKey(key);
+            EnsureKey(field);
 
-            return _db.HashDelete(hashKey, key);
+            var redisValue = _db.HashGet(hashKey, field);
+            if (redisValue.HasValue)
+            {
+                if (typeof(T).IsValueType)
+                    return redisValue.As<T>();
+                else
+                    return _serializer.Deserialize<T>(redisValue);
+            }
+
+            return default(T);
         }
 
-        public long HashDelete(string hashKey, IEnumerable<string> keys)
+        public bool HashFieldSet<T>(string hashKey, string field, T value)
         {
             EnsureKey(hashKey);
-            EnsureNotNull(nameof(keys), keys);
+            EnsureKey(field);
 
-            return _db.HashDelete(hashKey, keys.Select(x => (RedisValue)x).ToArray());
+            return _db.HashSet(hashKey, field, _serializer.Serialize(value), When.Always);
         }
 
-        public bool HashExists(string hashKey, string key)
+        public T HashObjGet<T>(string hashKey, T model)
+            where T : class
         {
             EnsureKey(hashKey);
-            EnsureKey(key);
+            EnsureNotNull(nameof(model), model);
 
-            return _db.HashExists(hashKey, key);
+            var hashValues = _db.HashGetAll(hashKey);
+            var obj = Activator.CreateInstance<T>();
+            var acc = TypeAccessor.Create(typeof(T));
+            foreach (var val in hashValues)
+                acc[obj, val.Name] = val.Value;
+
+            return obj;
         }
 
-        public T HashGet<T>(string hashKey, string key)
+        public bool HashObjSet<T>(string hashKey, T model)
+            where T : class
         {
             EnsureKey(hashKey);
-            EnsureKey(key);
+            EnsureNotNull(nameof(model), model);
 
-            var redisValue = _db.HashGet(hashKey, key);
-            return redisValue.HasValue ? _serializer.Deserialize<T>(redisValue) : default(T);
-        }
+            var acc = ObjectAccessor.Create(model);
+            var members = acc.TypeAccessor.GetMembers();
+            var entrys = members.Select(p => new HashEntry(p.Name, _serializer.Serialize(acc[p.Name]))).ToArray();
+            _db.HashSet(hashKey, entrys);
 
-        public Dictionary<string, T> HashGet<T>(string hashKey, IEnumerable<string> keys)
-        {
-            EnsureKey(hashKey);
-            EnsureNotNull(nameof(keys), keys);
-
-            return keys.Select(x => new { key = x, value = HashGet<T>(hashKey, x) })
-                .ToDictionary(kv => kv.key, kv => kv.value, StringComparer.Ordinal);
-        }
-
-        public Dictionary<string, T> HashGetAll<T>(string hashKey)
-        {
-            EnsureKey(hashKey);
-
-            return _db
-                .HashGetAll(hashKey)
-                .ToDictionary(
-                    x => x.Name.ToString(),
-                    x => _serializer.Deserialize<T>(x.Value),
-                    StringComparer.Ordinal);
-        }
-
-        public long HashIncerementBy(string hashKey, string key, long value)
-        {
-            EnsureKey(hashKey);
-            EnsureKey(key);
-
-            return _db.HashIncrement(hashKey, key, value);
-        }
-
-        public double HashIncerementBy(string hashKey, string key, double value)
-        {
-            EnsureKey(hashKey);
-            EnsureKey(key);
-
-            return _db.HashIncrement(hashKey, key, value);
-        }
-
-        public IEnumerable<string> HashKeys(string hashKey)
-        {
-            EnsureKey(hashKey);
-
-            return _db.HashKeys(hashKey).Select(x => x.ToString());
-        }
-
-        public long HashLength(string hashKey)
-        {
-            EnsureKey(hashKey);
-
-            return _db.HashLength(hashKey);
-        }
-
-        public bool HashSet<T>(string hashKey, string key, T value, bool nx = false)
-        {
-            EnsureKey(hashKey);
-            EnsureKey(key);
-
-            return _db.HashSet(hashKey, key, _serializer.Serialize(value), nx ? When.NotExists : When.Always);
-        }
-
-        public void HashSet<T>(string hashKey, Dictionary<string, T> values)
-        {
-            EnsureKey(hashKey);
-            EnsureNotNull(nameof(values), values);
-
-            var entries = values.Select(kv => new HashEntry(kv.Key, _serializer.Serialize(kv.Value)));
-            _db.HashSet(hashKey, entries.ToArray());
-        }
-
-        public IEnumerable<T> HashValues<T>(string hashKey)
-        {
-            EnsureKey(hashKey);
-
-            return _db.HashValues(hashKey).Select(x => _serializer.Deserialize<T>(x));
+            return true;
         }
         #endregion
 
@@ -597,18 +576,16 @@ namespace RedisTools
             return results;
         }
 
-
         private void EnsureKey(string key)
         {
             if (string.IsNullOrEmpty(key))
                 throw new ArgumentNullException("缓存键不能为空");
         }
 
-        private void EnsureNotNull<T>(string name, IEnumerable<T> value)
+        private void EnsureNotNull<T>(string name, IEnumerable<T> values)
         {
-            EnsureNotNull(name, value);
-            if (!value.Any())
-                throw new InvalidOperationException("提供的集合中含有空项");
+            if (values == null || !values.Any())
+                throw new InvalidOperationException("提供的集合为空或未包含项");
         }
 
         private void EnsureNotNull(string name, object value)
