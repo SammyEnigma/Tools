@@ -406,6 +406,31 @@ namespace RedisTools
             return _db.HashSet(hashKey, field, _serializer.Serialize(value), When.Always);
         }
 
+        public async Task<T> HashFieldGetAsync<T>(string hashKey, string field)
+        {
+            EnsureKey(hashKey);
+            EnsureKey(field);
+
+            var redisValue = await _db.HashGetAsync(hashKey, field).ConfigureAwait(false);
+            if (redisValue.HasValue)
+            {
+                if (typeof(T).IsValueType)
+                    return redisValue.As<T>();
+                else
+                    return _serializer.Deserialize<T>(redisValue);
+            }
+
+            return default(T);
+        }
+
+        public Task<bool> HashFieldSetAsync<T>(string hashKey, string field, T value)
+        {
+            EnsureKey(hashKey);
+            EnsureKey(field);
+
+            return _db.HashSetAsync(hashKey, field, _serializer.Serialize(value), When.Always);
+        }
+
         public T HashObjGet<T>(string hashKey, T model)
             where T : class
         {
@@ -433,6 +458,33 @@ namespace RedisTools
             _db.HashSet(hashKey, entrys);
 
             return true;
+        }
+
+        public async Task<T> HashObjGetAsync<T>(string hashKey, T model)
+            where T : class
+        {
+            EnsureKey(hashKey);
+            EnsureNotNull(nameof(model), model);
+
+            var hashValues = await _db.HashGetAllAsync(hashKey).ConfigureAwait(false);
+            var obj = Activator.CreateInstance<T>();
+            var acc = TypeAccessor.Create(typeof(T));
+            foreach (var val in hashValues)
+                acc[obj, val.Name] = val.Value;
+
+            return obj;
+        }
+
+        public Task HashObjSetAsync<T>(string hashKey, T model)
+            where T : class
+        {
+            EnsureKey(hashKey);
+            EnsureNotNull(nameof(model), model);
+
+            var acc = ObjectAccessor.Create(model);
+            var members = acc.TypeAccessor.GetMembers();
+            var entrys = members.Select(p => new HashEntry(p.Name, _serializer.Serialize(acc[p.Name]))).ToArray();
+            return _db.HashSetAsync(hashKey, entrys);
         }
         #endregion
 
