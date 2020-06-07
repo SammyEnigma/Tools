@@ -9,18 +9,18 @@ using System.Threading.Tasks;
 
 namespace RedisTools
 {
-    public class RedisHelper
+    public class RedisHelper : IRedisHelper
     {
         private IDatabase _db;
-        private static ConnectionMultiplexer _connector;
+        private ConnectionMultiplexer _connector;
         private ISerializer _serializer;
 
         public IDatabase Database { get { return this._db; } }
 
-        public RedisHelper()
+        public RedisHelper(IRedisBase redisBase)
         {
-            _connector = ConnectionMultiplexer.Connect("");
-            _db = _connector.GetDatabase();
+            _connector = redisBase.GetConnection();
+            _db = redisBase.GetDB(0);
             _serializer = new NewtonsoftSerializer();
         }
 
@@ -489,20 +489,20 @@ namespace RedisTools
         #endregion
 
         #region pub/sub
-        public long Publish<T>(RedisChannel channel, T message)
+        public long Publish<T>(string channel, T message)
         {
             var sub = _connector.GetSubscriber();
             return sub.Publish(channel, _serializer.Serialize(message));
         }
 
-        public async Task<long> PublishAsync<T>(RedisChannel channel, T message)
+        public async Task<long> PublishAsync<T>(string channel, T message)
         {
             var sub = _connector.GetSubscriber();
             return await sub.PublishAsync(channel, _serializer.Serialize(message))
                 .ConfigureAwait(false);
         }
 
-        public void Subscribe<T>(RedisChannel channel, Action<T> handler)
+        public void Subscribe<T>(string channel, Action<T> handler)
         {
             EnsureNotNull(nameof(handler), handler);
 
@@ -510,7 +510,7 @@ namespace RedisTools
             sub.Subscribe(channel, (redisChannel, value) => handler(_serializer.Deserialize<T>(value)));
         }
 
-        public async Task SubscribeAsync<T>(RedisChannel channel, Func<T, Task> handler)
+        public async Task SubscribeAsync<T>(string channel, Func<T, Task> handler)
         {
             EnsureNotNull(nameof(handler), handler);
 
@@ -519,7 +519,7 @@ namespace RedisTools
                 await handler(_serializer.Deserialize<T>(value)).ConfigureAwait(false));
         }
 
-        public void Unsubscribe<T>(RedisChannel channel, Action<T> handler)
+        public void Unsubscribe<T>(string channel, Action<T> handler)
         {
             EnsureNotNull(nameof(handler), handler);
 
@@ -527,7 +527,7 @@ namespace RedisTools
             sub.Unsubscribe(channel, (redisChannel, value) => handler(_serializer.Deserialize<T>(value)));
         }
 
-        public async Task UnsubscribeAsync<T>(RedisChannel channel, Func<T, Task> handler)
+        public async Task UnsubscribeAsync<T>(string channel, Func<T, Task> handler)
         {
             EnsureNotNull(nameof(handler), handler);
 
