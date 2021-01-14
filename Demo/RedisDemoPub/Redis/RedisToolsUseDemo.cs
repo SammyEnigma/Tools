@@ -8,8 +8,7 @@ namespace Demo.Redis
 {
     public class RedisToolsUseDemo
     {
-        private static RedisBase redisBase = new RedisBase("localhost:6379,password=123456,abortConnect=false,connectTimeout=10000");
-        private static RedisHelper redisHelper = new RedisHelper(redisBase);
+        private static RedisHelper redisHelper = new RedisHelper("localhost:6379,password=123456,abortConnect=false,connectTimeout=10000");
         public static void UseDemo()
         {
             var data = new A

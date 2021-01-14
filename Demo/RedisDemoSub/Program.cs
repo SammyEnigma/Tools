@@ -6,8 +6,7 @@ namespace RedisDemoSub
 {
     class Program
     {
-        private static RedisBase redisBase = new RedisBase("localhost:6379,password=123456,abortConnect=false,connectTimeout=10000");
-        private static RedisHelper redisHelper = new RedisHelper(redisBase);
+        private static RedisHelper redisHelper = new RedisHelper("localhost:6379,password=123456,abortConnect=false,connectTimeout=10000");
         static void Main(string[] args)
         {
             Sub();

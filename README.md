@@ -1,6 +1,4 @@
 # Tools
 可能会有用的轻量的、小型的工具类。
 
-#### LightMessage-RabbitMQ
-+ 这个版本是Asp.Net Core的封装, 用法参考 * https://github.com/curiousPeng/ForceFramework * 里的用法,消息消费端写法也参考Console版本demo
-+ Console版本参考 * https://github.com/curiousPeng/LightMessager * 里的demo
+具体每个文件夹对应一个工具，都配有简单的readme说明文档，希望能对各位看官有用。

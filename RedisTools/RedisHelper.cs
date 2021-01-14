@@ -4,23 +4,22 @@ using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace RedisTools
 {
-    public class RedisHelper : IRedisHelper
+    public class RedisHelper
     {
         private IDatabase _db;
-        private ConnectionMultiplexer _connector;
+        private static ConnectionMultiplexer _connector;
         private ISerializer _serializer;
 
-        public IDatabase Database { get { return this._db; } }
+        public IDatabase DB { get { return this._db; } }
 
-        public RedisHelper(IRedisBase redisBase)
+        public RedisHelper(string host)
         {
-            _connector = redisBase.GetConnection();
-            _db = redisBase.GetDB(0);
+            _connector = ConnectionMultiplexer.Connect(host);
+            _db = _connector.GetDatabase();
             _serializer = new NewtonsoftSerializer();
         }
 
@@ -52,15 +51,15 @@ namespace RedisTools
             return _db.KeyDeleteAsync(key);
         }
 
-        public void RemoveAll(IEnumerable<string> keys)
+        public long RemoveAll(IEnumerable<string> keys)
         {
             EnsureNotNull(nameof(keys), keys);
 
             var redisKeys = keys.Select(x => (RedisKey)x).ToArray();
-            _db.KeyDelete(redisKeys);
+            return _db.KeyDelete(redisKeys);
         }
 
-        public Task RemoveAllAsync(IEnumerable<string> keys)
+        public Task<long> RemoveAllAsync(IEnumerable<string> keys)
         {
             EnsureNotNull(nameof(keys), keys);
 
@@ -68,7 +67,7 @@ namespace RedisTools
             return _db.KeyDeleteAsync(redisKeys);
         }
 
-        public T Get<T>(string key)
+        public T Get<T>(string key, T defaultVal = default)
         {
             EnsureKey(key);
 
@@ -81,27 +80,15 @@ namespace RedisTools
                     return _serializer.Deserialize<T>(valueBytes);
             }
 
-            return default(T);
+            return defaultVal;
         }
 
-        public T Get<T>(string key, DateTimeOffset expiresAt)
+        public T Get<T>(string key, DateTimeOffset expiresAt, T defaultVal = default)
         {
-            EnsureKey(key);
-
-            var valueBytes = _db.StringGet(key);
-            if (valueBytes.HasValue)
-            {
-                _db.KeyExpire(key, expiresAt.UtcDateTime.Subtract(DateTime.UtcNow));
-                if (typeof(T).IsValueType)
-                    return valueBytes.As<T>();
-                else
-                    return _serializer.Deserialize<T>(valueBytes);
-            }
-
-            return default(T);
+            return Get(key, expiresAt.ToTimeSpan(), defaultVal);
         }
 
-        public T Get<T>(string key, TimeSpan expiresIn)
+        public T Get<T>(string key, TimeSpan expiresIn, T defaultVal = default)
         {
             EnsureKey(key);
 
@@ -115,10 +102,10 @@ namespace RedisTools
                     return _serializer.Deserialize<T>(valueBytes);
             }
 
-            return default(T);
+            return defaultVal;
         }
 
-        public async Task<T> GetAsync<T>(string key)
+        public async Task<T> GetAsync<T>(string key, T defaultVal = default)
         {
             EnsureKey(key);
 
@@ -131,28 +118,15 @@ namespace RedisTools
                     return _serializer.Deserialize<T>(valueBytes);
             }
 
-            return default(T);
+            return defaultVal;
         }
 
-        public async Task<T> GetAsync<T>(string key, DateTimeOffset expiresAt)
+        public Task<T> GetAsync<T>(string key, DateTimeOffset expiresAt, T defaultVal = default)
         {
-            EnsureKey(key);
-
-            var valueBytes = await _db.StringGetAsync(key).ConfigureAwait(false);
-            if (valueBytes.HasValue)
-            {
-                await _db.KeyExpireAsync(key, expiresAt.UtcDateTime.Subtract(DateTime.UtcNow))
-                    .ConfigureAwait(false);
-                if (typeof(T).IsValueType)
-                    return valueBytes.As<T>();
-                else
-                    return _serializer.Deserialize<T>(valueBytes);
-            }
-
-            return default(T);
+            return GetAsync(key, expiresAt.ToTimeSpan(), defaultVal);
         }
 
-        public async Task<T> GetAsync<T>(string key, TimeSpan expiresIn)
+        public async Task<T> GetAsync<T>(string key, TimeSpan expiresIn, T defaultVal = default)
         {
             EnsureKey(key);
 
@@ -166,7 +140,7 @@ namespace RedisTools
                     return _serializer.Deserialize<T>(valueBytes);
             }
 
-            return default(T);
+            return defaultVal;
         }
 
         public bool Add<T>(string key, T value)
@@ -184,33 +158,9 @@ namespace RedisTools
             return _db.StringSet(key, entryBytes);
         }
 
-        public async Task<bool> AddAsync<T>(string key, T value)
-        {
-            EnsureKey(key);
-
-            var entryBytes = _serializer.Serialize(value);
-
-            return await _db.StringSetAsync(key, entryBytes).ConfigureAwait(false);
-        }
-
         public bool Add<T>(string key, T value, DateTimeOffset expiresAt)
         {
-            EnsureKey(key);
-
-            var entryBytes = _serializer.Serialize(value);
-            var expiration = expiresAt.UtcDateTime.Subtract(DateTime.UtcNow);
-
-            return _db.StringSet(key, entryBytes, expiration);
-        }
-
-        public async Task<bool> AddAsync<T>(string key, T value, DateTimeOffset expiresAt)
-        {
-            EnsureKey(key);
-
-            var entryBytes = _serializer.Serialize(value);
-            var expiration = expiresAt.UtcDateTime.Subtract(DateTime.UtcNow);
-
-            return await _db.StringSetAsync(key, entryBytes, expiration).ConfigureAwait(false);
+            return Add(key, value, expiresAt.ToTimeSpan());
         }
 
         public bool Add<T>(string key, T value, TimeSpan expiresIn)
@@ -222,6 +172,20 @@ namespace RedisTools
             return _db.StringSet(key, entryBytes, expiresIn);
         }
 
+        public async Task<bool> AddAsync<T>(string key, T value)
+        {
+            EnsureKey(key);
+
+            var entryBytes = _serializer.Serialize(value);
+
+            return await _db.StringSetAsync(key, entryBytes).ConfigureAwait(false);
+        }
+
+        public Task<bool> AddAsync<T>(string key, T value, DateTimeOffset expiresAt)
+        {
+            return AddAsync(key, value, expiresAt.ToTimeSpan());
+        }
+
         public async Task<bool> AddAsync<T>(string key, T value, TimeSpan expiresIn)
         {
             EnsureKey(key);
@@ -231,7 +195,7 @@ namespace RedisTools
             return await _db.StringSetAsync(key, entryBytes, expiresIn).ConfigureAwait(false);
         }
 
-        public IDictionary<string, T> GetAll<T>(IEnumerable<string> keys)
+        public IDictionary<string, T> GetAll<T>(IEnumerable<string> keys, T defaultVal = default)
         {
             EnsureNotNull(nameof(keys), keys);
 
@@ -239,32 +203,30 @@ namespace RedisTools
             var result = _db.StringGet(redisKeys);
 
             var dict = new Dictionary<string, T>(StringComparer.Ordinal);
-            for (var index = 0; index < redisKeys.Length; index++)
+            for (var i = 0; i < redisKeys.Length; i++)
             {
-                var value = result[index];
-                dict.Add(redisKeys[index], value == RedisValue.Null ? default(T) : _serializer.Deserialize<T>(value));
+                var value = result[i];
+                dict.Add(redisKeys[i], value.HasValue ? defaultVal : _serializer.Deserialize<T>(value));
             }
 
             return dict;
         }
 
-        public IDictionary<string, T> GetAll<T>(IEnumerable<string> keys, DateTimeOffset expiresAt)
+        public IDictionary<string, T> GetAll<T>(IEnumerable<string> keys, DateTimeOffset expiresAt, T defaultVal = default)
         {
-            var result = GetAll<T>(keys);
-            UpdateExpiryAll(keys.ToArray(), expiresAt);
+            return GetAll(keys, expiresAt.ToTimeSpan(), defaultVal);
+        }
+
+        public IDictionary<string, T> GetAll<T>(IEnumerable<string> keys, TimeSpan expiresIn, T defaultVal = default)
+        {
+            var result = GetAll<T>(keys, defaultVal);
+            foreach (var key in keys)
+                _db.KeyExpire(key, expiresIn, CommandFlags.FireAndForget);
 
             return result;
         }
 
-        public IDictionary<string, T> GetAll<T>(IEnumerable<string> keys, TimeSpan expiresIn)
-        {
-            var result = GetAll<T>(keys);
-            UpdateExpiryAll(keys.ToArray(), expiresIn);
-
-            return result;
-        }
-
-        public async Task<IDictionary<string, T>> GetAllAsync<T>(IEnumerable<string> keys)
+        public async Task<IDictionary<string, T>> GetAllAsync<T>(IEnumerable<string> keys, T defaultVal = default)
         {
             EnsureNotNull(nameof(keys), keys);
 
@@ -272,27 +234,25 @@ namespace RedisTools
             var result = await _db.StringGetAsync(redisKeys).ConfigureAwait(false);
 
             var dict = new Dictionary<string, T>(StringComparer.Ordinal);
-            for (var index = 0; index < redisKeys.Length; index++)
+            for (var i = 0; i < redisKeys.Length; i++)
             {
-                var value = result[index];
-                dict.Add(redisKeys[index], value == RedisValue.Null ? default(T) : _serializer.Deserialize<T>(value));
+                var value = result[i];
+                dict.Add(redisKeys[i], value.HasValue ? defaultVal : _serializer.Deserialize<T>(value));
             }
 
             return dict;
         }
 
-        public async Task<IDictionary<string, T>> GetAllAsync<T>(IEnumerable<string> keys, DateTimeOffset expiresAt)
+        public Task<IDictionary<string, T>> GetAllAsync<T>(IEnumerable<string> keys, DateTimeOffset expiresAt, T defaultVal = default)
         {
-            var result = await GetAllAsync<T>(keys).ConfigureAwait(false);
-            await UpdateExpiryAllAsync(keys.ToArray(), expiresAt).ConfigureAwait(false);
-
-            return result;
+            return GetAllAsync(keys, expiresAt.ToTimeSpan(), defaultVal);
         }
 
-        public async Task<IDictionary<string, T>> GetAllAsync<T>(IEnumerable<string> keys, TimeSpan expiresIn)
+        public async Task<IDictionary<string, T>> GetAllAsync<T>(IEnumerable<string> keys, TimeSpan expiresIn, T defaultVal = default)
         {
-            var result = await GetAllAsync<T>(keys).ConfigureAwait(false);
-            await UpdateExpiryAllAsync(keys.ToArray(), expiresIn).ConfigureAwait(false);
+            var result = await GetAllAsync<T>(keys, defaultVal).ConfigureAwait(false);
+            foreach (var key in keys)
+                _db.KeyExpire(key, expiresIn, CommandFlags.FireAndForget);
 
             return result;
         }
@@ -308,49 +268,12 @@ namespace RedisTools
             return _db.StringSet(values);
         }
 
-        public async Task<bool> AddAllAsync<T>(IDictionary<string, T> items)
-        {
-            EnsureNotNull(nameof(items), items);
-
-            var values = items
-                .Select(p => new KeyValuePair<RedisKey, RedisValue>(p.Key, _serializer.Serialize(p.Value)))
-                .ToArray();
-
-            return await _db.StringSetAsync(values).ConfigureAwait(false);
-        }
-
         public bool AddAll<T>(IDictionary<string, T> items, DateTimeOffset expiresAt)
         {
-            EnsureNotNull(nameof(items), items);
-
-            var values = items
-                .Select(p => new KeyValuePair<RedisKey, RedisValue>(p.Key, _serializer.Serialize(p.Value)))
-                .ToArray();
-
-            var result = _db.StringSet(values);
-            foreach (var value in values)
-                _db.KeyExpire(value.Key, expiresAt.UtcDateTime);
-
-            return result;
+            return AddAll(items, expiresAt.ToTimeSpan());
         }
 
-        public async Task<bool> AddAllAsync<T>(IDictionary<string, T> items, DateTimeOffset expiresAt)
-        {
-            EnsureNotNull(nameof(items), items);
-
-            var values = items
-                .Select(p => new KeyValuePair<RedisKey, RedisValue>(p.Key, _serializer.Serialize(p.Value)))
-                .ToArray();
-
-            var result = await _db.StringSetAsync(values).ConfigureAwait(false);
-            Parallel.ForEach(values, async value =>
-                await _db.KeyExpireAsync(value.Key, expiresAt.UtcDateTime)
-                .ConfigureAwait(false));
-
-            return result;
-        }
-
-        public bool AddAll<T>(IDictionary<string, T> items, TimeSpan expiresOn)
+        public bool AddAll<T>(IDictionary<string, T> items, TimeSpan expiresIn)
         {
             EnsureNotNull(nameof(items), items);
 
@@ -360,12 +283,28 @@ namespace RedisTools
 
             var result = _db.StringSet(values);
             foreach (var value in values)
-                _db.KeyExpire(value.Key, expiresOn);
+                _db.KeyExpire(value.Key, expiresIn, CommandFlags.FireAndForget);
 
             return result;
         }
 
-        public async Task<bool> AddAllAsync<T>(IDictionary<string, T> items, TimeSpan expiresOn)
+        public Task<bool> AddAllAsync<T>(IDictionary<string, T> items)
+        {
+            EnsureNotNull(nameof(items), items);
+
+            var values = items
+                .Select(p => new KeyValuePair<RedisKey, RedisValue>(p.Key, _serializer.Serialize(p.Value)))
+                .ToArray();
+
+            return _db.StringSetAsync(values);
+        }
+
+        public Task<bool> AddAllAsync<T>(IDictionary<string, T> items, DateTimeOffset expiresAt)
+        {
+            return AddAllAsync(items, expiresAt.ToTimeSpan());
+        }
+
+        public async Task<bool> AddAllAsync<T>(IDictionary<string, T> items, TimeSpan expiresIn)
         {
             EnsureNotNull(nameof(items), items);
 
@@ -374,8 +313,8 @@ namespace RedisTools
                 .ToArray();
 
             var result = await _db.StringSetAsync(values).ConfigureAwait(false);
-            Parallel.ForEach(values, async value =>
-                await _db.KeyExpireAsync(value.Key, expiresOn).ConfigureAwait(false));
+            foreach (var value in values)
+                _db.KeyExpire(value.Key, expiresIn, CommandFlags.FireAndForget);
 
             return result;
         }
@@ -580,14 +519,7 @@ namespace RedisTools
 
         public IDictionary<string, bool> UpdateExpiryAll(string[] keys, DateTimeOffset expiresAt)
         {
-            EnsureNotNull(nameof(keys), keys);
-
-            var results = new Dictionary<string, bool>(StringComparer.Ordinal);
-
-            for (var i = 0; i < keys.Length; i++)
-                results.Add(keys[i], _db.KeyExpire(keys[i], expiresAt.UtcDateTime.Subtract(DateTime.UtcNow)));
-
-            return results;
+            return UpdateExpiryAll(keys, expiresAt.ToTimeSpan());
         }
 
         public IDictionary<string, bool> UpdateExpiryAll(string[] keys, TimeSpan expiresIn)
