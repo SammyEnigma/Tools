@@ -2,10 +2,16 @@ namespace RedisTools.Serialization
 {
     public interface ISerializer
     {
-        byte[] Serialize(object item);
+        byte[] SerializeToBytes(object item);
 
-        object Deserialize(byte[] serializedObject);
+        string Serialize(object item);
 
-        T Deserialize<T>(byte[] serializedObject);
+        object Deserialize(byte[] serializedBytes);
+
+        T Deserialize<T>(byte[] serializedBytes);
+
+        object Deserialize(string serializedStr);
+
+        T Deserialize<T>(string serializedStr);
     }
 }

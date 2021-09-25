@@ -1,4 +1,7 @@
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
+using System.Collections.Generic;
 using System.Text;
 
 namespace RedisTools.Serialization
@@ -20,8 +23,7 @@ namespace RedisTools.Serialization
         /// Initializes a new instance of the <see cref="NewtonsoftSerializer"/> class.
         /// </summary>
         public NewtonsoftSerializer() : this(null)
-        {
-        }
+        { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NewtonsoftSerializer"/> class.
@@ -29,7 +31,13 @@ namespace RedisTools.Serialization
         /// <param name="settings">The settings.</param>
         public NewtonsoftSerializer(JsonSerializerSettings settings)
         {
-            this.settings = settings ?? new JsonSerializerSettings();
+            this.settings = settings ?? new JsonSerializerSettings
+            {
+                DateFormatHandling = DateFormatHandling.IsoDateFormat,
+                NullValueHandling = NullValueHandling.Ignore,
+                ContractResolver = new DefaultContractResolver(),
+                Converters = new List<JsonConverter> { new StringEnumConverter() }
+            };
         }
 
         /// <summary>
@@ -37,25 +45,35 @@ namespace RedisTools.Serialization
         /// </summary>
         /// <param name="item">The item.</param>
         /// <returns></returns>
-        public byte[] Serialize(object item)
+        public byte[] SerializeToBytes(object item)
         {
             var type = item?.GetType();
             var jsonString = JsonConvert.SerializeObject(item, type, settings);
             return encoding.GetBytes(jsonString);
         }
 
+        /// <summary>
+        /// Serializes the specified item.
+        /// </summary>
+        /// <param name="item">The item.</param>
+        /// <returns></returns>
+        public string Serialize(object item)
+        {
+            var type = item?.GetType();
+            var jsonString = JsonConvert.SerializeObject(item, type, settings);
+            return jsonString;
+        }
 
         /// <summary>
         /// Deserializes the specified serialized object.
         /// </summary>
         /// <param name="serializedObject">The serialized object.</param>
         /// <returns></returns>
-        public object Deserialize(byte[] serializedObject)
+        public object Deserialize(byte[] serializedBytes)
         {
-            var jsonString = encoding.GetString(serializedObject);
+            var jsonString = encoding.GetString(serializedBytes);
             return JsonConvert.DeserializeObject(jsonString, typeof(object));
         }
-
 
         /// <summary>
         /// Deserializes the specified serialized object.
@@ -63,10 +81,31 @@ namespace RedisTools.Serialization
         /// <typeparam name="T"></typeparam>
         /// <param name="serializedObject">The serialized object.</param>
         /// <returns></returns>
-        public T Deserialize<T>(byte[] serializedObject)
+        public T Deserialize<T>(byte[] serializedBytes)
         {
-            var jsonString = encoding.GetString(serializedObject);
+            var jsonString = encoding.GetString(serializedBytes);
             return JsonConvert.DeserializeObject<T>(jsonString, settings);
+        }
+
+        /// <summary>
+        /// Deserializes the specified serialized object string.
+        /// </summary>
+        /// <param name="serializedStr">The serialized object string representation.</param>
+        /// <returns></returns>
+        public object Deserialize(string serializedStr)
+        {
+            return JsonConvert.DeserializeObject(serializedStr, typeof(object));
+        }
+
+        /// <summary>
+        /// Deserializes the specified serialized object string.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="serializedStr">The serialized object string representation.</param>
+        /// <returns></returns>
+        public T Deserialize<T>(string serializedStr)
+        {
+            return JsonConvert.DeserializeObject<T>(serializedStr, settings);
         }
     }
 }
