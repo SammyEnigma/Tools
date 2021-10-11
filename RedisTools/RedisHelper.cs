@@ -11,13 +11,36 @@ namespace RedisTools
 {
     public class RedisHelper
     {
-        private static ConnectionMultiplexer _connector;
+        public class Advance
+        {
+            private IConnectionMultiplexer _connector;
 
+            public Advance(IConnectionMultiplexer connector)
+            {
+                _connector = connector;
+            }
+
+            public IDatabase this[int index]
+            {
+                get
+                {
+                    if (index < 0 || index >= 15)
+                    {
+                        return _connector.GetDatabase();
+                    }
+                    else
+                    {
+                        return _connector.GetDatabase(index);
+                    }
+                }
+            }
+        }
+
+        private static ConnectionMultiplexer _connector;
         private IDatabase _db;
         private ISerializer _serializer;
         private uint _maxBytesLength;
-
-        public IDatabase DB { get { return this._db; } }
+        public Advance Advanced { get; }
 
         public RedisHelper(string host, ISerializer serializer = null, uint maxBytesLength = 10 * 1024)
         {
@@ -25,6 +48,7 @@ namespace RedisTools
             _db = _connector.GetDatabase();
             _serializer = serializer ?? new NewtonsoftSerializer();
             _maxBytesLength = maxBytesLength;
+            Advanced = new Advance(_connector);
         }
 
         public bool Exists(string key, CommandFlags flags = CommandFlags.None, int db = 0)
