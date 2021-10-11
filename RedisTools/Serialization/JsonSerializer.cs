@@ -36,6 +36,8 @@ namespace RedisTools.Serialization
                 DateFormatHandling = DateFormatHandling.IsoDateFormat,
                 NullValueHandling = NullValueHandling.Ignore,
                 ContractResolver = new DefaultContractResolver(),
+                DateTimeZoneHandling = DateTimeZoneHandling.Local,
+                DateFormatString = "yyyy-MM-dd HH:mm:ss.fff",
                 Converters = new List<JsonConverter> { new StringEnumConverter() }
             };
         }
