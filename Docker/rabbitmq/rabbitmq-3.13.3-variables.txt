@@ -1,0 +1,8 @@
+node		: rabbit@864efcbf815e
+home dir		: /var/lib/rabbitmq
+config file(s)	: /etc/rabbitmq/conf.d/10-defaults.conf
+cookie hash	: 2gzx1WCGF/x5/jSXRY6wcQ==
+log(s)		: <stdout>
+data dir		: /var/lib/rabbitmq/mnesia/rabbit@864efcbf815e
+# link: https://www.rabbitmq.com/docs/configure
+# link: https://www.rabbitmq.com/docs/production-checklist
